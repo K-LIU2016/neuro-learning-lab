@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>融合版 04 · 专业模式 · 完整探索</title>
+<link rel="stylesheet" href="./mockup.css" />
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module" src="./brain-view.mjs"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">脑</span><div><p class="eyebrow">NeuroAtlas · Learning Edition</p><h1>脑科学实验室</h1></div></div>
+  <nav class="modes"><button class="dim">学习路线 ✓</button><button>自由探索</button><button class="on">专业模式</button></nav>
+  <div class="top-right">
+    <div class="prog-chip"><i></i>学习路线 16 / 16 ✓ · 专业条目 18 / 62</div>
+    <div class="lang"><button>中</button><button>EN</button><button class="on">双语</button></div>
+  </div>
+</header>
+<main class="work">
+  <div class="banner">🎉 学习路线已完成，专业模式解锁：62 个条目、Yeo-7 七网络、教学回路、双语与文献来源全部开放。左侧仍可随时回到学习路线复习。</div>
+  <aside class="rail">
+    <div class="tabs"><button>解剖</button><button>功能区</button><button class="on">网络</button><button>日常动作</button><button>学习</button></div>
+    <div class="searchbox">🔍 搜索脑区、网络或别名，如 “海马 / hippocampus”</div>
+    <h5>Yeo 2011 七网络</h5>
+    <div class="ritem"><i style="background:#781286"></i>视觉网络 <small>Visual</small></div>
+    <div class="ritem"><i style="background:#4682B4"></i>躯体运动网络 <small>Somatomotor</small></div>
+    <div class="ritem"><i style="background:#00760E"></i>背侧注意网络 <small>Dorsal attn.</small></div>
+    <div class="ritem"><i style="background:#C43AFA"></i>腹侧注意网络 <small>Ventral attn.</small></div>
+    <div class="ritem"><i style="background:#DCF8A4"></i>边缘网络 <small>Limbic</small></div>
+    <div class="ritem"><i style="background:#E69422"></i>额顶网络 <small>Frontoparietal</small></div>
+    <div class="ritem on"><i style="background:#CD3E4E"></i>默认网络 <small>Default</small></div>
+    <h5>教学回路专题</h5>
+    <div class="ritem"><i style="background:#888"></i>语言回路 <small>5 个节点</small></div>
+    <div class="ritem"><i style="background:#888"></i>记忆回路 <small>6 个节点</small></div>
+    <div class="rail-note">解剖 / 功能区下还有 40+ 皮层条目：中央沟、M1、S1、V1、岛叶……全部带来源。</div>
+  </aside>
+  <section class="stage-wrap">
+    <div class="stage-head">
+      <div><p class="eyebrow">Networks · Yeo 2011 七网络</p><h2>默认网络在脑内的分布</h2></div>
+      <div class="view-btns"><button class="on">外侧</button><button>内侧</button><button>俯视</button><button>↺ 重置</button></div>
+    </div>
+    <div id="stage" data-stage='{"view":"oblique","paint":"yeo","labels":[{"b":"默认网络","s":"Default network","at":[-10,-58,48],"on":true},{"b":"视觉网络","s":"Visual","at":[-32,-95,6]},{"b":"躯体运动","s":"Somatomotor","at":[-45,-20,58]}]}'>
+      <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">着色方式</span><b>Yeo-7 网络 · 双侧皮层</b></div>
+      <div class="hud bl">
+        <span><i class="sw" style="background:#781286"></i>视觉</span>
+        <span><i class="sw" style="background:#4682B4"></i>躯体运动</span>
+        <span><i class="sw" style="background:#00760E"></i>背侧注意</span>
+        <span><i class="sw" style="background:#C43AFA"></i>腹侧注意</span>
+        <span><i class="sw" style="background:#DCF8A4"></i>边缘</span>
+        <span><i class="sw" style="background:#E69422"></i>额顶</span>
+        <span><i class="sw" style="background:#CD3E4E"></i>默认</span>
+      </div>
+      <div class="hud br">fsaverage5 · Yeo 2011 atlas 着色</div>
+    </div>
+    <p class="gesture">拖动旋转 · 滚轮缩放 · 点击任意网络查看证据与文献</p>
+  </section>
+  <aside class="panel">
+    <article class="card">
+      <header>
+        <span class="tag" style="--c:#CD3E4E">Yeo-7 网络 · 双侧分布</span>
+        <h2>默认网络 <span class="en">Default Mode Network</span></h2>
+        <p class="one">大脑的<b>「白日梦网络」</b>：不专注外界时最活跃。</p>
+      </header>
+      <section><h4>🧠 它做什么？</h4><p>自传体记忆 · 设想未来 · 理解他人想法。专注做事时它安静下来，走神时亮起。</p></section>
+      <div>
+        <div class="lens"><b>解剖视角</b><span class="share"><i style="background:var(--parietal)"></i>顶叶 ≈42%</span><span class="share"><i style="background:var(--frontal)"></i>额叶 ≈31%</span><span class="share"><i style="background:var(--temporal)"></i>颞叶 ≈15%</span></div>
+        <div class="lens"><b>功能视角</b>后部扣带 · 前额叶内侧 · 顶叶内侧（楔前叶）</div>
+        <div class="lens"><b>网络视角</b>Yeo-7 默认网络成员 100%（atlas 直接标注）</div>
+      </div>
+      <details open><summary>来源与证据</summary><div class="inner">
+        <div class="src">Yeo et al. (2011). <a>J Neurophysiol</a> — 七网络划分</div>
+        <div class="src">Destrieux et al. (2010). <a>NeuroImage</a> — 解剖分区</div>
+        <div class="src">Raichle (2015). <a>Annu Rev Neurosci</a> — 默认网络综述</div>
+      </div></details>
+      <footer class="acts"><button class="btn primary">在 3D 中聚焦默认网络</button><button class="btn soft">开始专业测验 · 20 题</button></footer>
+    </article>
+  </aside>
+</main>
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>融合版 03 · 章节小测 · 点选脑区</title>
+<link rel="stylesheet" href="./mockup.css" />
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module" src="./brain-view.mjs"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">脑</span><div><p class="eyebrow">NeuroAtlas · Learning Edition</p><h1>脑科学实验室</h1></div></div>
+  <nav class="modes"><button class="on">学习路线</button><button>自由探索</button><button class="dim">专业模式 🔒</button></nav>
+  <div class="top-right">
+    <div class="prog-chip"><i></i>学习进度 12 / 16 个核心概念</div>
+    <div class="lang"><button class="on">中</button><button>EN</button><button>双语</button></div>
+  </div>
+</header>
+<main class="work">
+  <aside class="rail">
+    <p class="rail-cap">学习路线 · 第 4 章小测 · 边看边答</p>
+    <section class="chapter done2"><header><span class="num">✓</span><div><h3>第 1–3 章</h3><p>10 / 10 · 已完成</p></div></header></section>
+    <section class="chapter on">
+      <header><span class="num">4</span><div><h3>记忆与情绪</h3><p>章节小测 · 第 2 / 3 题</p></div></header>
+      <ol class="steps">
+        <li class="done">海马体</li>
+        <li class="done">杏仁核</li>
+        <li>丘脑 · 中继站</li>
+      </ol>
+    </section>
+    <section class="chapter lock"><header><span class="num">🎁</span><div><h3>综合测验 · 12 题</h3><p>学完 16 个概念后解锁</p></div></header></section>
+    <div class="final-quiz open">🎯 每答一题，答对的脑区会在 3D 上亮起来</div>
+  </aside>
+  <section class="stage-wrap">
+    <div class="stage-head">
+      <div><p class="eyebrow">Chapter 04 · 章节小测</p><h2>在 3D 大脑上答题</h2></div>
+      <div class="view-btns"><button class="on">透视</button><button>外观</button><button>↺ 重置</button></div>
+    </div>
+    <div id="stage" data-stage='{"view":"deep","paint":"lobes","ghost":true,"deep":"all","highlight":"hippocampus","highlightColor":"#2FA06A","pins":[{"k":"A","t":"额叶","at":[-45,38,40]},{"k":"B","t":"杏仁核","at":"deep:amygdala:L"},{"k":"C","t":"海马体","at":"deep:hippocampus:L","ok":true},{"k":"D","t":"小脑","at":"deep:cerebellum"}]}'>
+      <div class="qband">❓ 哪个结构负责把新经历变成长期记忆？</div>
+      <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">第 2 / 3 题 · 已答对</span><b>C · 海马体 ✓</b></div>
+      <div class="hud br">也可以直接点击 3D 脑上的结构作答</div>
+    </div>
+    <p class="gesture">点击图钉字母或右侧选项作答 · 答对的结构会保持高亮</p>
+  </section>
+  <aside class="panel">
+    <article class="card">
+      <div class="qmeta"><span>第 4 章 · 记忆与情绪</span><span>2 / 3 · 已答对 1 题</span></div>
+      <h3 class="qtitle">哪个结构负责把新经历转变成长期记忆？</h3>
+      <div class="options">
+        <button class="option dim2"><b>A</b>额叶 · 负责计划与自控</button>
+        <button class="option dim2"><b>B</b>杏仁核 · 负责情绪警报</button>
+        <button class="option right"><b>C</b>海马体 · 记忆的保存键</button>
+        <button class="option dim2"><b>D</b>小脑 · 负责动作协调</button>
+      </div>
+      <div class="feedback"><strong>答对了！</strong>海马体像「保存键」，在睡眠中把白天的经历巩固成长期记忆。额叶管计划、杏仁核管情绪、小脑管协调——它们各司其职。</div>
+      <footer class="acts"><button class="btn primary">下一题 · 3 / 3</button><button class="btn soft">退出小测，继续学习</button></footer>
+    </article>
+  </aside>
+</main>
+</body>
+</html>

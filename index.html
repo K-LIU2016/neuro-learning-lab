@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>脑科学实验室 · 融合学习版</title>
+  <link rel="stylesheet" href="./mockup.css" />
+  <style>
+    .route { display: none; }
+    .route.active { display: grid; }
+    .work.route:not(.pro-route) { grid-template-rows: minmax(0, 1fr); }
+    .work.pro-route { grid-template-rows: auto minmax(0, 1fr); }
+    .route .chapter[data-route-link], .route .steps li[data-learn-step], .ritem[data-network] { cursor: pointer; }
+    .route .chapter[data-route-link]:hover, .route .steps li[data-learn-step]:hover, .ritem[data-network]:hover { filter: brightness(.98); }
+    .route .btn, .route .view-btns button, .route .modes button, .route .tabs button, .route .lang button { transition: transform .16s ease, background .16s ease, border-color .16s ease; }
+    .route button:active { transform: translateY(1px); }
+    .stage-wrap { min-height: 0; }
+    .stage-wrap > #learn-stage, .stage-wrap > #deep-stage, .stage-wrap > #quiz-stage, .stage-wrap > #pro-stage { min-height: 0; }
+    .stage-host { position: relative; flex: 1; min-height: 0; border-radius: var(--r-lg); background: radial-gradient(ellipse at 50% 40%, #17253a 0%, var(--stage) 72%); box-shadow: 0 10px 24px rgba(30, 39, 47, .14); overflow: hidden; }
+    .stage-host canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .stage-controls-note { color: var(--muted); font-size: 10px; margin-top: -2px; }
+    .mode-note { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 11px; }
+    .mode-note i { width: 7px; height: 7px; border-radius: 50%; background: var(--teal); }
+    .status-line { min-height: 18px; color: var(--soft); font-size: 11.5px; }
+    .feedback.bad { background: #fff2ef; border-color: #f0c7bd; color: #713126; }
+    .feedback.bad strong { color: var(--bad); }
+    .option.selected { border-color: var(--navy); box-shadow: inset 2px 0 0 var(--navy); opacity: 1; }
+    .option.selected b { background: var(--navy); color: #fff; }
+    .deep-hidden { display: none !important; }
+    .toast { position: fixed; left: 50%; bottom: 24px; z-index: 20; transform: translate(-50%, 14px); padding: 10px 16px; border-radius: 999px; background: var(--navy); color: #fff; opacity: 0; pointer-events: none; transition: opacity .18s ease, transform .18s ease; box-shadow: 0 8px 26px rgba(18,34,56,.2); font-size: 12px; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    @media (max-width: 1100px) {
+      html, body { overflow: auto; }
+      body { display: block; }
+      .top { flex-wrap: wrap; }
+      .top-right { margin-left: 0; }
+      .work.route, .work.pro-route { min-height: 980px; grid-template-columns: 230px minmax(420px, 1fr); grid-template-rows: minmax(0, 1fr); }
+      .panel { grid-column: 1 / -1; border-left: 0; border-top: 1px solid var(--line); min-height: 470px; }
+      .stage-wrap { min-height: 640px; }
+      .banner { grid-column: 1 / -1; }
+    }
+    @media (max-width: 720px) {
+      .top { padding: 10px 12px; gap: 10px; }
+      .modes { order: 3; width: 100%; justify-content: space-between; }
+      .modes button { flex: 1; padding: 0 7px; }
+      .work.route, .work.pro-route { display: flex; flex-direction: column; min-height: auto; }
+      .rail { min-height: auto; }
+      .stage-wrap { min-height: 520px; }
+      .panel { min-height: 520px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="brand"><span class="mark">脑</span><div><p class="eyebrow">NeuroAtlas · Learning Edition</p><h1>脑科学实验室</h1></div></div>
+    <nav class="modes" aria-label="学习模式">
+      <button class="on" data-route-link="learn">学习路线</button>
+      <button data-route-link="explore">自由探索</button>
+      <button data-route-link="pro">专业模式</button>
+    </nav>
+    <div class="top-right">
+      <div class="prog-chip"><i></i><span id="progressText">学习进度 3 / 16 个核心概念</span></div>
+      <div class="lang" aria-label="语言"><button class="on">中</button><button>EN</button><button>双语</button></div>
+    </div>
+  </header>
+
+  <main id="learnRoute" class="work route active" data-route-panel="learn">
+    <aside class="rail">
+      <p class="rail-cap">学习路线 · 第一次学脑科学 · 4 章 16 个概念</p>
+      <section class="chapter on">
+        <header><span class="num">1</span><div><h3>大脑的四个脑叶</h3><p>先认地方，再记功能 · <span id="lobeCount">3 / 4</span></p></div></header>
+        <ol class="steps">
+          <li class="done" data-learn-step="0">额叶 <em>Frontal</em></li>
+          <li class="done" data-learn-step="1">顶叶 <em>Parietal</em></li>
+          <li class="now" data-learn-step="2">颞叶 <em>Temporal · 当前</em></li>
+          <li data-learn-step="3">枕叶 <em>下一个</em></li>
+        </ol>
+      </section>
+      <section class="chapter lock" data-route-link="explore"><header><span class="num">2</span><div><h3>运动与感觉</h3><p>中央沟两边的「行动地图」</p></div></header></section>
+      <section class="chapter lock"><header><span class="num">3</span><div><h3>视觉 · 听觉 · 语言</h3><p>信息怎么进来、语言藏在哪里</p></div></header></section>
+      <section class="chapter lock" data-route-link="deep"><header><span class="num">4</span><div><h3>记忆与情绪</h3><p>深处的海马体和杏仁核</p></div></header></section>
+      <button class="final-quiz open" data-route-link="quiz">🎯 章节小测 · 边看 3D 边作答</button>
+    </aside>
+    <section class="stage-wrap">
+      <div class="stage-head"><div><p class="eyebrow">Chapter 01 · 大脑的四个脑叶</p><h2 id="learnStageTitle">颞叶在哪里？</h2></div>
+        <div class="view-btns"><button class="on" data-stage-view="lateral">左视</button><button data-stage-view="posterior">右视</button><button data-stage-view="superior">俯视</button><button data-stage-reset>↺ 重置</button></div>
+      </div>
+      <div id="learn-stage" data-stage='{"view":"lateral","paint":"lobes","highlight":"temporal","labels":[{"b":"颞叶","s":"Temporal lobe","at":"lobe:temporal","on":true},{"b":"额叶","s":"Frontal lobe","at":"lobe:frontal"},{"b":"枕叶","s":"Occipital lobe","at":"lobe:occipital"}]}' class="stage-host">
+        <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">当前脑区</span><b>颞叶 · 左右各一个</b></div>
+        <div class="hud bl"><span><i class="sw" style="background:var(--frontal)"></i>额叶</span><span><i class="sw" style="background:var(--parietal)"></i>顶叶</span><span><i class="sw" style="background:var(--temporal)"></i>颞叶</span><span><i class="sw" style="background:var(--occipital)"></i>枕叶</span></div>
+        <div class="hud br">真实皮层数据 · fsaverage5 / Destrieux</div>
+      </div>
+      <p class="gesture">拖动旋转 · 滚轮缩放 · 点击视角按钮 —— 像拿着一个真的大脑</p>
+    </section>
+    <aside class="panel"><article class="card" id="learnCard">
+      <header><span class="tag" style="--c:var(--temporal)">脑叶 · 本章第 3 / 4 个</span><h2 id="learnName">颞叶 <span class="en">Temporal Lobe</span></h2><p class="one" id="learnOne">耳朵上方的大脑「侧面」，主要负责<b>听懂世界</b>。</p></header>
+      <section><h4>📍 它在哪里？</h4><p id="learnWhere">耳朵的正上方和前方，大脑两侧靠下的位置，左右各一个。</p></section>
+      <section><h4>🧠 它做什么？</h4><p id="learnDoes">处理声音和语言，帮你听懂别人在说什么、认出熟悉的旋律；内侧深处还藏着与记忆有关的结构。</p></section>
+      <section><h4>💡 生活中的例子</h4><p id="learnExample">朋友在人群里喊你的名字，你立刻回头，这一瞬间就是颞叶在工作。</p></section>
+      <details><summary>专业信息（分区 · 网络）</summary><div class="inner"><div class="kv"><b>关联皮层</b><span>听觉联合皮层 · 颞下视觉区</span></div><div class="kv"><b>Yeo-7 网络</b><span>腹侧注意 · 边缘网络</span></div><div class="kv"><b>深部邻居</b><span>海马体 · 杏仁核（第 4 章详讲）</span></div></div></details>
+      <details><summary>来源与证据</summary><div class="inner">Destrieux et al. 2010, NeuroImage · Yeo et al. 2011, J Neurophysiol</div></details>
+      <p class="status-line" id="learnStatus">先记住三个问题：它在哪里？做什么？生活中什么时候用到？</p>
+      <footer class="acts"><button class="btn primary" data-next-lobe>我学会了 · 下一个：枕叶</button><button class="btn soft" data-route-link="quiz">本章小测 · 3 题</button></footer>
+    </article></aside>
+  </main>
+
+  <main id="deepRoute" class="work route" data-route-panel="deep">
+    <aside class="rail"><p class="rail-cap">学习路线 · 第 4 章 · 深入大脑内部</p>
+      <section class="chapter done2"><header><span class="num">✓</span><div><h3>大脑的四个脑叶</h3><p>4 / 4 · 已完成</p></div></header></section>
+      <section class="chapter done2"><header><span class="num">✓</span><div><h3>运动与感觉</h3><p>3 / 3 · 已完成</p></div></header></section>
+      <section class="chapter done2"><header><span class="num">✓</span><div><h3>视觉 · 听觉 · 语言</h3><p>3 / 3 · 已完成</p></div></header></section>
+      <section class="chapter on"><header><span class="num">4</span><div><h3>记忆与情绪</h3><p>皮层变透明，看进大脑深处 · 1 / 3</p></div></header><ol class="steps"><li class="now">海马体 <em>Hippocampus</em></li><li>杏仁核 <em>Amygdala</em></li><li>丘脑 · 中继站 <em>Thalamus</em></li></ol></section>
+      <button class="final-quiz open" data-route-link="quiz">🎯 进入章节小测</button>
+    </aside>
+    <section class="stage-wrap"><div class="stage-head"><div><p class="eyebrow">Chapter 04 · 记忆与情绪</p><h2>把皮层调成半透明，看见海马体</h2></div><div class="view-btns"><button data-deep-view="outer">外观</button><button class="on" data-deep-view="deep">透视</button><button data-stage-view="superior">分离两半球</button><button data-stage-reset>↺ 重置</button></div></div>
+      <div id="deep-stage" data-stage='{"view":"deep","paint":"lobes","ghost":true,"deep":"all","highlight":"hippocampus","deepColors":{"amygdala":"#E98A7C"},"labels":[{"b":"海马体","s":"Hippocampus · 记忆保存键","at":"deep:hippocampus:L","on":true},{"b":"杏仁核","s":"Amygdala · 情绪警报","at":"deep:amygdala:L"},{"b":"小脑","s":"Cerebellum · 动作协调","at":"deep:cerebellum"},{"b":"脑干","s":"Brainstem · 生命维持","at":"deep:brainstem"},{"b":"脊髓","s":"Spinal cord · 信息通路","at":"deep:spinalCord"}]}' class="stage-host">
+        <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">当前结构</span><b>海马体 · 左右各一个</b></div>
+        <div class="hud bl"><span><i class="sw" style="background:var(--amber)"></i>海马体</span><span><i class="sw" style="background:var(--frontal)"></i>杏仁核</span><span><i class="sw" style="background:#CFC7B6"></i>小脑 · 脑干 · 脊髓</span><span><i class="sw" style="background:rgba(233,226,211,.35)"></i>皮层（半透明）</span></div>
+        <div class="hud tr"><button data-settings-toggle>显示设置</button><button data-stage-reset>↺ 重置视角</button></div>
+        <div class="popcard" id="deepSettings"><b>显示设置</b><div class="track"><i></i></div><label><input type="checkbox" checked data-toggle-labels /> 显示结构名称</label><label><input type="checkbox" checked /> 显示小脑、脑干与脊髓</label><label><input type="checkbox" /> 显示胼胝体</label></div>
+        <div class="hud br">拖动旋转 · 深部结构为教学示意位置</div>
+      </div><p class="gesture">拖动旋转 · 滚轮缩放 —— 半透明皮层下，看清深部结构的空间关系</p></section>
+    <aside class="panel"><article class="card"><header><span class="tag" style="--c:var(--amber)">深部结构 · 本章第 1 / 3 个</span><h2>海马体 <span class="en">Hippocampus</span></h2><p class="one">把新经历写进长期记忆的<b>「保存键」</b>。</p></header>
+      <section><h4>📍 它在哪里？</h4><p>颞叶内侧深处，因为形状像海马而得名，左右各一个。</p></section><section><h4>🧠 它做什么？</h4><p>把白天的经历在睡眠中巩固成长期记忆，还负责空间导航，伦敦出租车司机的海马体就格外发达。</p></section><section><h4>💡 生活中的例子</h4><p>记住今天新同学的姓名、回忆昨晚晚饭吃了什么、在熟悉的城市里找到回家的路。</p></section>
+      <details open><summary>专业信息（网络 · 证据）</summary><div class="inner"><div class="kv"><b>Yeo-7 网络</b><span>边缘网络 Limbic</span></div><div class="kv"><b>邻近结构</b><span>内嗅皮层 · 杏仁核 · 丘脑</span></div><div class="kv"><b>经典案例</b><span>病人 H.M. 切除后无法形成新记忆</span></div></div></details><details><summary>来源与证据</summary><div class="inner">Scoville &amp; Milner 1957 · Yeo et al. 2011 · Destrieux et al. 2010</div></details>
+      <p class="status-line" id="deepStatus">透明度和标签可以从 3D 场景右上角的显示设置调整。</p><footer class="acts"><button class="btn primary" data-route-link="quiz">我学会了 · 开始章节小测</button><button class="btn soft" data-route-link="learn">回看：颞叶在哪里</button></footer></article></aside>
+  </main>
+
+  <main id="quizRoute" class="work route" data-route-panel="quiz">
+    <aside class="rail"><p class="rail-cap">学习路线 · 第 4 章小测 · 边看边答</p><section class="chapter done2"><header><span class="num">✓</span><div><h3>第 1–3 章</h3><p>10 / 10 · 已完成</p></div></header></section><section class="chapter on"><header><span class="num">4</span><div><h3>记忆与情绪</h3><p>章节小测 · 第 <span id="quizCount">1</span> / 3 题</p></div></header><ol class="steps"><li class="done">海马体</li><li class="done">杏仁核</li><li>丘脑 · 中继站</li></ol></section><section class="chapter lock"><header><span class="num">🎁</span><div><h3>综合测验 · 12 题</h3><p>学完 16 个概念后解锁</p></div></header></section><div class="final-quiz open">🎯 每答一题，答对的结构会在 3D 上亮起来</div></aside>
+    <section class="stage-wrap"><div class="stage-head"><div><p class="eyebrow">Chapter 04 · 章节小测</p><h2>在 3D 大脑上答题</h2></div><div class="view-btns"><button class="on" data-stage-view="deep">透视</button><button data-stage-view="lateral">外观</button><button data-stage-reset>↺ 重置</button></div></div>
+      <div id="quiz-stage" data-stage='{"view":"deep","paint":"lobes","ghost":true,"deep":"all","highlight":"hippocampus","highlightColor":"#2FA06A","pins":[{"k":"A","t":"额叶","at":[-45,38,40]},{"k":"B","t":"杏仁核","at":"deep:amygdala:L"},{"k":"C","t":"海马体","at":"deep:hippocampus:L","ok":true},{"k":"D","t":"小脑","at":"deep:cerebellum"}]}' class="stage-host"><div class="qband">❓ 哪个结构负责把新经历变成长期记忆？</div><div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">第 <span id="quizHudCount">1</span> / 3 题</span><b id="quizHudAnswer">请点击图钉或右侧选项</b></div><div class="hud br">点击图钉或右侧选项作答</div></div><p class="gesture">点击图钉字母或右侧选项作答 · 答对的结构会保持高亮</p></section>
+    <aside class="panel"><article class="card"><div class="qmeta"><span>第 4 章 · 记忆与情绪</span><span id="quizMeta">1 / 3 · 未作答</span></div><h3 class="qtitle">哪个结构负责把新经历转变成长期记忆？</h3><div class="options"><button class="option" data-answer="A"><b>A</b>额叶 · 负责计划与自控</button><button class="option" data-answer="B"><b>B</b>杏仁核 · 负责情绪警报</button><button class="option" data-answer="C"><b>C</b>海马体 · 记忆的保存键</button><button class="option" data-answer="D"><b>D</b>小脑 · 负责动作协调</button></div><div class="feedback" id="quizFeedback" hidden><strong id="quizFeedbackTitle">答对了！</strong><span id="quizFeedbackText">海马体像「保存键」，在睡眠中把白天的经历巩固成长期记忆。</span></div><footer class="acts"><button class="btn primary" data-next-question>下一题 · 2 / 3</button><button class="btn soft" data-route-link="learn">退出小测，继续学习</button></footer></article></aside>
+  </main>
+
+  <main id="exploreRoute" class="work route" data-route-panel="explore">
+    <aside class="rail"><p class="rail-cap">自由探索 · 先熟悉，再深入</p><section class="chapter on"><header><span class="num">✦</span><div><h3>自由旋转大脑</h3><p>选择一种着色方式开始观察</p></div></header><ol class="steps"><li class="now">四个脑叶 <em>入门</em></li><li>深部结构 <em>透视</em></li><li>功能网络 <em>进阶</em></li></ol></section><section class="chapter" data-route-link="learn"><header><span class="num">1</span><div><h3>回到学习路线</h3><p>按 4 章 16 个概念学习</p></div></header></section><div class="final-quiz open">💡 没有标准顺序，先观察你感兴趣的地方</div></aside>
+    <section class="stage-wrap"><div class="stage-head"><div><p class="eyebrow">Explore · 真实皮层数据</p><h2>自由观察大脑的形状与分区</h2></div><div class="view-btns"><button class="on" data-stage-view="oblique">斜视</button><button data-stage-view="lateral">侧视</button><button data-stage-view="superior">俯视</button><button data-stage-reset>↺ 重置</button></div></div>
+      <div id="explore-stage" data-stage='{"view":"oblique","paint":"lobes","labels":[{"b":"额叶","s":"Frontal lobe","at":"lobe:frontal"},{"b":"顶叶","s":"Parietal lobe","at":"lobe:parietal"},{"b":"颞叶","s":"Temporal lobe","at":"lobe:temporal"},{"b":"枕叶","s":"Occipital lobe","at":"lobe:occipital"}]}' class="stage-host"><div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">探索模式</span><b>四个脑叶 · 双侧皮层</b></div><div class="hud bl"><span><i class="sw" style="background:var(--frontal)"></i>额叶</span><span><i class="sw" style="background:var(--parietal)"></i>顶叶</span><span><i class="sw" style="background:var(--temporal)"></i>颞叶</span><span><i class="sw" style="background:var(--occipital)"></i>枕叶</span></div><div class="hud br">拖动旋转 · 滚轮缩放</div></div><p class="gesture">自由探索：先观察形状，再点击学习路线把结构和功能连起来</p></section>
+    <aside class="panel"><article class="card"><header><span class="tag" style="--c:var(--teal)">自由探索 · 入门模式</span><h2>先把大脑看熟</h2><p class="one">你可以随时旋转、缩放，观察左右半球的对称和脑沟的起伏。</p></header><section><h4>🔎 观察提示</h4><p>先找中央沟，再看它前面的额叶和后面的顶叶。靠下、靠前的位置是颞叶，最后面的枕叶与视觉关系密切。</p></section><section><h4>🧭 推荐下一步</h4><p>回到学习路线，从“在哪里”开始，再逐步加入“做什么”和生活中的例子。</p></section><details open><summary>你现在能做什么</summary><div class="inner"><div class="kv"><b>旋转</b><span>按住鼠标拖动 3D 模型</span></div><div class="kv"><b>缩放</b><span>滚动鼠标滚轮</span></div><div class="kv"><b>切换视角</b><span>使用上方视角按钮</span></div></div></details><footer class="acts"><button class="btn primary" data-route-link="learn">开始学习路线</button><button class="btn soft" data-route-link="deep">查看深部结构</button></footer></article></aside>
+  </main>
+
+  <main id="proRoute" class="work route pro-route" data-route-panel="pro">
+    <div class="banner">🎉 进阶探索已打开：可以查看 Yeo-7 七网络、双语术语和文献来源。左侧仍可随时回到学习路线复习。</div>
+    <aside class="rail"><div class="tabs"><button>解剖</button><button>功能区</button><button class="on">网络</button><button>日常动作</button><button>学习</button></div><div class="searchbox">🔍 搜索脑区、网络或别名</div><h5>Yeo 2011 七网络</h5>
+      <div class="ritem" data-network="visual"><i style="background:#781286"></i>视觉网络 <small>Visual</small></div><div class="ritem" data-network="somato"><i style="background:#4682B4"></i>躯体运动网络 <small>Somatomotor</small></div><div class="ritem" data-network="dorsal"><i style="background:#00760E"></i>背侧注意网络 <small>Dorsal attn.</small></div><div class="ritem" data-network="ventral"><i style="background:#C43AFA"></i>腹侧注意网络 <small>Ventral attn.</small></div><div class="ritem" data-network="limbic"><i style="background:#DCF8A4"></i>边缘网络 <small>Limbic</small></div><div class="ritem" data-network="fronto"><i style="background:#E69422"></i>额顶网络 <small>Frontoparietal</small></div><div class="ritem on" data-network="default"><i style="background:#CD3E4E"></i>默认网络 <small>Default</small></div>
+      <h5>教学回路专题</h5><div class="ritem"><i style="background:#888"></i>语言回路 <small>5 个节点</small></div><div class="ritem"><i style="background:#888"></i>记忆回路 <small>6 个节点</small></div><div class="rail-note">解剖 / 功能区下还有 40+ 皮层条目，全部带来源。</div></aside>
+      <section class="stage-wrap"><div class="stage-head"><div><p class="eyebrow">Networks · Yeo 2011 七网络</p><h2 id="proStageTitle">默认网络在脑内的分布</h2></div><div class="view-btns"><button class="on" data-stage-view="oblique">外侧</button><button data-stage-view="lateral">内侧</button><button data-stage-view="superior">俯视</button><button data-stage-reset>↺ 重置</button></div></div><div id="pro-stage" data-stage='{"view":"oblique","paint":"yeo","labels":[{"b":"默认网络","s":"Default network","at":[-10,-58,48],"on":true},{"b":"视觉网络","s":"Visual","at":[-32,-95,6]},{"b":"躯体运动","s":"Somatomotor","at":[-45,-20,58]}]}' class="stage-host"><div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">着色方式</span><b>Yeo-7 网络 · 双侧皮层</b></div><div class="hud bl"><span><i class="sw" style="background:#781286"></i>视觉</span><span><i class="sw" style="background:#4682B4"></i>躯体运动</span><span><i class="sw" style="background:#00760E"></i>背侧注意</span><span><i class="sw" style="background:#C43AFA"></i>腹侧注意</span><span><i class="sw" style="background:#DCF8A4"></i>边缘</span><span><i class="sw" style="background:#E69422"></i>额顶</span><span><i class="sw" style="background:#CD3E4E"></i>默认</span></div><div class="hud br">fsaverage5 · Yeo 2011 atlas 着色</div></div><p class="gesture">拖动旋转 · 滚轮缩放 · 点击左侧网络查看解释与来源</p></section>
+    <aside class="panel"><article class="card"><header><span class="tag" style="--c:#CD3E4E">Yeo-7 网络 · 双侧分布</span><h2 id="proName">默认网络 <span class="en">Default Mode Network</span></h2><p class="one" id="proOne">大脑的<b>「白日梦网络」</b>：不专注外界时最活跃。</p></header><section><h4>🧠 它做什么？</h4><p id="proDoes">自传体记忆、设想未来、理解他人的想法。专注做事时它会安静下来，走神时亮起来。</p></section><div class="lens"><b>解剖视角</b><span id="proAnatomy">顶叶内侧、前额叶内侧、颞顶内侧</span></div><div class="lens"><b>功能视角</b><span id="proFunction">内部思维与自我相关加工</span></div><details open><summary>来源与证据</summary><div class="inner src">Yeo et al. (2011), <a href="https://doi.org/10.1152/jn.00606.2011" target="_blank" rel="noreferrer">J Neurophysiol</a><br />Raichle (2015), <a href="https://doi.org/10.1146/annurev-neuro-071013-014030" target="_blank" rel="noreferrer">Annu Rev Neurosci</a></div></details><p class="status-line">当前是专业着色，想回到易懂解释可点击顶部“学习路线”。</p><footer class="acts"><button class="btn primary" data-route-link="learn">回到学习路线复习</button><button class="btn soft" data-route-link="explore">自由探索 3D 模型</button></footer></article></aside>
+  </main>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

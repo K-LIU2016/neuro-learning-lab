@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>融合版 02 · 记忆与情绪 · 海马体</title>
+<link rel="stylesheet" href="./mockup.css" />
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module" src="./brain-view.mjs"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">脑</span><div><p class="eyebrow">NeuroAtlas · Learning Edition</p><h1>脑科学实验室</h1></div></div>
+  <nav class="modes"><button class="on">学习路线</button><button>自由探索</button><button class="dim">专业模式 🔒</button></nav>
+  <div class="top-right">
+    <div class="prog-chip"><i></i>学习进度 10 / 16 个核心概念</div>
+    <div class="lang"><button class="on">中</button><button>EN</button><button>双语</button></div>
+  </div>
+</header>
+<main class="work">
+  <aside class="rail">
+    <p class="rail-cap">学习路线 · 第 4 章 · 深入大脑内部</p>
+    <section class="chapter done2"><header><span class="num">✓</span><div><h3>大脑的四个脑叶</h3><p>4 / 4 · 已完成</p></div></header></section>
+    <section class="chapter done2"><header><span class="num">✓</span><div><h3>运动与感觉</h3><p>3 / 3 · 已完成</p></div></header></section>
+    <section class="chapter done2"><header><span class="num">✓</span><div><h3>视觉 · 听觉 · 语言</h3><p>3 / 3 · 已完成</p></div></header></section>
+    <section class="chapter on">
+      <header><span class="num">4</span><div><h3>记忆与情绪</h3><p>皮层变透明，看进大脑深处 · 1 / 3</p></div></header>
+      <ol class="steps">
+        <li class="now">海马体 <em>Hippocampus</em></li>
+        <li>杏仁核 <em>Amygdala</em></li>
+        <li>丘脑 · 中继站 <em>Thalamus</em></li>
+      </ol>
+    </section>
+    <div class="final-quiz">🔒 综合测验 · 12 题 · 完成路线后解锁</div>
+  </aside>
+  <section class="stage-wrap">
+    <div class="stage-head">
+      <div><p class="eyebrow">Chapter 04 · 记忆与情绪</p><h2>把皮层调成半透明，看见海马体</h2></div>
+      <div class="view-btns"><button>外观</button><button class="on">透视</button><button>分离两半球</button><button>↺ 重置</button></div>
+    </div>
+    <div id="stage" data-stage='{"view":"deep","paint":"lobes","ghost":true,"deep":"all","highlight":"hippocampus","deepColors":{"amygdala":"#E98A7C"},"labels":[{"b":"海马体","s":"Hippocampus · 记忆保存键","at":"deep:hippocampus:L","on":true},{"b":"杏仁核","s":"Amygdala · 情绪警报","at":"deep:amygdala:L"}]}'>
+      <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">当前结构</span><b>海马体 · 左右各一个</b></div>
+      <div class="hud bl">
+        <span><i class="sw" style="background:var(--amber)"></i>海马体</span>
+        <span><i class="sw" style="background:var(--frontal)"></i>杏仁核</span>
+        <span><i class="sw" style="background:#CFC7B6"></i>其他深部结构</span>
+        <span><i class="sw" style="background:rgba(233,226,211,.35)"></i>皮层（半透明）</span>
+      </div>
+      <div class="hud tr"><button>显示设置</button><button>↺ 重置视角</button></div>
+      <div class="popcard">
+        <b>皮层透明度</b>
+        <div class="track"><i></i></div>
+        <label><input type="checkbox" checked /> 显示结构名称</label>
+        <label><input type="checkbox" checked /> 显示脑干与小脑</label>
+        <label><input type="checkbox" /> 显示胼胝体</label>
+      </div>
+      <div class="hud br">拖动旋转 · 深部结构为教学示意位置</div>
+    </div>
+    <p class="gesture">拖动旋转 · 滚轮缩放 —— 半透明皮层下，看清深部结构的空间关系</p>
+  </section>
+  <aside class="panel">
+    <article class="card">
+      <header>
+        <span class="tag" style="--c:var(--amber)">深部结构 · 本章第 1 / 3 个</span>
+        <h2>海马体 <span class="en">Hippocampus</span></h2>
+        <p class="one">把新经历写进长期记忆的<b>「保存键」</b>。</p>
+      </header>
+      <section><h4>📍 它在哪里？</h4><p>颞叶内侧深处，因为形状像海马而得名，左右各一个。</p></section>
+      <section><h4>🧠 它做什么？</h4><p>把白天的经历在睡眠中巩固成长期记忆，还负责空间导航——伦敦出租车司机的海马体就格外发达。</p></section>
+      <section><h4>💡 生活中的例子</h4><p>记住今天新同学的姓名、回忆昨晚晚饭吃了什么、在熟悉的城市里找到回家的路。</p></section>
+      <details open><summary>专业信息（网络 · 证据）</summary><div class="inner">
+        <div class="kv"><b>Yeo-7 网络</b><span>边缘网络 Limbic</span></div>
+        <div class="kv"><b>邻近结构</b><span>内嗅皮层 · 杏仁核 · 丘脑</span></div>
+        <div class="kv"><b>证据类型</b><span>尸检解剖 + fMRI 记忆编码研究</span></div>
+        <div class="kv"><b>经典案例</b><span>病人 H.M. 切除后无法形成新记忆</span></div>
+      </div></details>
+      <details><summary>来源与证据</summary><div class="inner">Scoville &amp; Milner 1957 · Yeo et al. 2011 · Destrieux et al. 2010</div></details>
+      <footer class="acts"><button class="btn primary">我学会了 · 下一个：杏仁核</button><button class="btn soft">回看：颞叶在哪里</button></footer>
+    </article>
+  </aside>
+</main>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<title>融合版 01 · 学习路线 · 四个脑叶</title>
+<link rel="stylesheet" href="./mockup.css" />
+<script type="importmap">{ "imports": { "three": "./three.module.js" } }</script>
+<script type="module" src="./brain-view.mjs"></script>
+</head>
+<body>
+<header class="top">
+  <div class="brand"><span class="mark">脑</span><div><p class="eyebrow">NeuroAtlas · Learning Edition</p><h1>脑科学实验室</h1></div></div>
+  <nav class="modes"><button class="on">学习路线</button><button>自由探索</button><button class="dim">专业模式 🔒</button></nav>
+  <div class="top-right">
+    <div class="prog-chip"><i></i>学习进度 3 / 16 个核心概念</div>
+    <div class="lang"><button class="on">中</button><button>EN</button><button>双语</button></div>
+  </div>
+</header>
+<main class="work">
+  <aside class="rail">
+    <p class="rail-cap">学习路线 · 第一次学脑科学 · 4 章 16 个概念</p>
+    <section class="chapter on">
+      <header><span class="num">1</span><div><h3>大脑的四个脑叶</h3><p>先认地方，再记功能 · 3 / 4</p></div></header>
+      <ol class="steps">
+        <li class="done">额叶 <em>Frontal</em></li>
+        <li class="done">顶叶 <em>Parietal</em></li>
+        <li class="now">颞叶 <em>Temporal · 当前</em></li>
+        <li>枕叶 <em>下一个</em></li>
+      </ol>
+    </section>
+    <section class="chapter lock"><header><span class="num">2</span><div><h3>运动与感觉</h3><p>中央沟两边的「行动地图」</p></div></header></section>
+    <section class="chapter lock"><header><span class="num">3</span><div><h3>视觉 · 听觉 · 语言</h3><p>信息怎么进来、语言藏在哪里</p></div></header></section>
+    <section class="chapter lock"><header><span class="num">4</span><div><h3>记忆与情绪</h3><p>深处的海马体和杏仁核</p></div></header></section>
+    <div class="final-quiz">🔒 综合测验 · 12 题 · 完成路线后解锁</div>
+  </aside>
+  <section class="stage-wrap">
+    <div class="stage-head">
+      <div><p class="eyebrow">Chapter 01 · 大脑的四个脑叶</p><h2>颞叶在哪里？</h2></div>
+      <div class="view-btns"><button class="on">左视</button><button>右视</button><button>俯视</button><button>↺ 重置</button></div>
+    </div>
+    <div id="stage" data-stage='{"view":"lateral","paint":"lobes","highlight":"temporal","labels":[{"b":"颞叶","s":"Temporal lobe","at":"lobe:temporal","on":true},{"b":"额叶","s":"Frontal lobe","at":"lobe:frontal"},{"b":"枕叶","s":"Occipital lobe","at":"lobe:occipital"}]}'>
+      <div class="hud tl"><span class="eyebrow" style="color:rgba(221,228,226,.5)">当前脑区</span><b>颞叶 · 左右各一个</b></div>
+      <div class="hud bl">
+        <span><i class="sw" style="background:var(--frontal)"></i>额叶</span>
+        <span><i class="sw" style="background:var(--parietal)"></i>顶叶</span>
+        <span><i class="sw" style="background:var(--temporal)"></i>颞叶</span>
+        <span><i class="sw" style="background:var(--occipital)"></i>枕叶</span>
+      </div>
+      <div class="hud br">真实皮层数据 · fsaverage5 / Destrieux</div>
+    </div>
+    <p class="gesture">拖动旋转 · 滚轮缩放 · 点击脑区高亮 —— 像拿着一个真的大脑</p>
+  </section>
+  <aside class="panel">
+    <article class="card">
+      <header>
+        <span class="tag" style="--c:var(--temporal)">脑叶 · 本章第 3 / 4 个</span>
+        <h2>颞叶 <span class="en">Temporal Lobe</span></h2>
+        <p class="one">耳朵上方的大脑「侧面」，主要负责<b>听懂世界</b>。</p>
+      </header>
+      <section><h4>📍 它在哪里？</h4><p>耳朵的正上方和前方，大脑两侧靠下的位置，左右各一个。</p></section>
+      <section><h4>🧠 它做什么？</h4><p>处理声音和语言，帮你听懂别人在说什么、认出熟悉的旋律；内侧深处还藏着与记忆有关的结构。</p></section>
+      <section><h4>💡 生活中的例子</h4><p>朋友在人群里喊你的名字，你立刻回头——这一瞬间就是颞叶在工作。</p></section>
+      <details><summary>专业信息（分区 · 网络）</summary><div class="inner">
+        <div class="kv"><b>关联皮层</b><span>听觉联合皮层 · 颞下视觉区</span></div>
+        <div class="kv"><b>Yeo-7 网络</b><span>腹侧注意 · 边缘网络</span></div>
+        <div class="kv"><b>深部邻居</b><span>海马体 · 杏仁核（第 4 章详讲）</span></div>
+      </div></details>
+      <details><summary>来源与证据</summary><div class="inner">Destrieux et al. 2010, NeuroImage · Yeo et al. 2011, J Neurophysiol</div></details>
+      <footer class="acts"><button class="btn primary">我学会了 · 下一个：枕叶</button><button class="btn soft">本章小测 · 3 题</button></footer>
+    </article>
+  </aside>
+</main>
+</body>
+</html>
