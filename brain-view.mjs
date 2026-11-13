@@ -6,6 +6,7 @@ import { OrbitControls } from './OrbitControls.js';
 const IVORY = new THREE.Color('#E9E2D3');
 const TINT = '#F2B441';
 const LOBES = ['frontal', 'parietal', 'temporal', 'occipital', 'insula', 'cingulate'];
+const LOBES_EN = ['Frontal lobe', 'Parietal lobe', 'Temporal lobe', 'Occipital lobe', 'Insula', 'Cingulate cortex'];
 const LOBE_COLORS = { frontal: '#E98A7C', parietal: '#E0BA68', temporal: '#66B5A5', occipital: '#889DDC', insula: '#C88BB6', cingulate: '#A9A2C9' };
 const NET_HEX = ['#781286', '#4682B4', '#00760E', '#C43AFA', '#DCF8A4', '#E69422', '#CD3E4E'];
 const LOBE_LABELS = {
@@ -16,6 +17,7 @@ const LOBE_LABELS = {
   insula: ['G_Ins_lg_and_S_cent_ins', 'G_insular_short', 'S_circular_insula_ant', 'S_circular_insula_inf', 'S_circular_insula_sup'],
   cingulate: ['G_and_S_cingul-Ant', 'G_and_S_cingul-Mid-Ant', 'G_and_S_cingul-Mid-Post', 'G_cingul-Post-dorsal', 'G_cingul-Post-ventral', 'S_pericallosal', 'G_subcallosal'],
 };
+const PIN_EN = { 额叶: 'Frontal lobe', 杏仁核: 'Amygdala', 海马体: 'Hippocampus', 小脑: 'Cerebellum' };
 const CENTER = new THREE.Vector3(0, -18, 12); // FreeSurfer RAS
 const VIEWS = {
   lateral: [-1, 0.1, 0.16], oblique: [-0.9, 0.3, 0.32], superior: [0, -0.14, 1],
@@ -97,6 +99,11 @@ const DEFS = [
   { key: 'spinalCord', mid: true, make: () => tube([[0, -37, -48], [0, -47, -66], [0, -59, -86], [0, -72, -106]], 4.8) },
   { key: 'callosum', mid: true, make: () => tube([[0, 22, -2], [0, 30, 8], [0, 22, 20], [0, 2, 26], [0, -22, 24], [0, -40, 15], [0, -42, 6]], 4).scale(3.5, 1, 1) },
 ];
+
+function languageCopy(zh, en) {
+  const lang = document.documentElement.dataset.lang ?? 'zh';
+  return lang === 'en' ? en : lang === 'bi' ? zh + ' / ' + en : zh;
+}
 
 export function mountStage(host, cfg) {
   const labels = [];
@@ -265,18 +272,25 @@ export function mountStage(host, cfg) {
 
     for (const l of cfg.labels ?? []) addLabel(l, 'lblchip');
     for (const p of cfg.pins ?? []) addLabel(p, 'pin');
+    const renderStageLabel = (el, l, cls) => {
+      if (cls === 'pin') {
+        el.innerHTML = '<b>' + l.k + '</b><span>' + languageCopy(l.t, l.te ?? PIN_EN[l.t] ?? l.t) + (l.ok ? ' ✓' : '') + '</span>';
+      } else {
+        el.innerHTML = (l.b ? '<b>' + languageCopy(l.b, l.be ?? l.b) + '</b>' : '') + (l.s ? '<span>' + l.s + '</span>' : '');
+      }
+    };
     function addLabel(l, cls) {
       const el = document.createElement('div');
       el.className = cls + (l.on ? ' on' : '') + (l.ok ? ' ok' : '');
-      el.innerHTML = cls === 'pin' ? '<b>' + l.k + '</b><span>' + l.t + (l.ok ? ' ✓' : '') + '</span>'
-        : (l.b ? '<b>' + l.b + '</b>' : '') + (l.s ? '<span>' + l.s + '</span>' : '');
+      renderStageLabel(el, l, cls);
       layer.append(el);
       if (cls === 'pin') {
         el.dataset.answer = l.k;
         el.addEventListener('click', () => host.dispatchEvent(new CustomEvent('brain-pin', { detail: l })));
       }
-      labels.push({ el, at: l.at });
+      labels.push({ el, at: l.at, item: l, kind: cls });
     }
+    window.addEventListener('neuro-language', () => labels.forEach(item => renderStageLabel(item.el, item.item, item.kind)));
     function anchorWorld(at) {
       if (Array.isArray(at)) return toWorld(new THREE.Vector3(...at));
       if (at.startsWith('lobe:')) {
@@ -353,3 +367,4 @@ window.addEventListener('neuro-route', event => {
   const routeRoot = document.querySelector(`[data-route-panel="${event.detail}"]`);
   mountVisibleRoute(routeRoot);
 });
+

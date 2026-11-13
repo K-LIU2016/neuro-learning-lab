@@ -33,6 +33,15 @@ h1, h2, h3, h4, p, ul, ol { margin: 0; }
 .lang button { min-height: 30px; padding: 0 12px; font-size: 11px; color: var(--soft); }
 .lang button.on { background: var(--navy); color: #fff; }
 
+/* The language control is stateful: in single-language modes, hide the
+   secondary labels that are present in the bilingual source markup. */
+html[data-lang="zh"] .card .en,
+html[data-lang="zh"] .steps em,
+html[data-lang="zh"] .ritem small,
+html[data-lang="en"] .card .en,
+html[data-lang="en"] .steps em,
+html[data-lang="en"] .ritem small { display: none !important; }
+
 /* ── layout ── */
 .work { display: grid; grid-template-columns: 292px minmax(0, 1fr) 386px; min-height: 0; }
 body:has(.banner) .work { grid-template-rows: auto minmax(0, 1fr); }
@@ -161,3 +170,4 @@ body:has(.banner) .work { grid-template-rows: auto minmax(0, 1fr); }
 .share i { width: 8px; height: 8px; border-radius: 2px; }
 .src { padding: 2px 0; }
 .src a { color: #1f5fae; text-decoration: none; }
+
