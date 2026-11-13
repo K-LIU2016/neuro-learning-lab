@@ -183,7 +183,7 @@ function refreshDynamicLanguage() {
   const network = selected && networkData[selected.dataset.network];
   if (network) {
     const en = networkEnglish[selected.dataset.network];
-    $('#proName').innerHTML = localized(network[0], en[0]) + (getLanguage() === 'bi' ? '' : '');
+    $('#proName').innerHTML = localized(network[0], en[0]);
     localize($('#proOne'), network[2], en[1]);
     localize($('#proDoes'), network[2] + ' 这是专业模式里的快速解释，后续可以继续展开完整文献和脑区清单。', en[1] + ' This is a quick explanation in Pro mode; the full evidence and region list can be expanded later.');
     localize($('#proAnatomy'), network[3], en[2]);

@@ -270,8 +270,6 @@ export function mountStage(host, cfg) {
 
     // The initial appearance is already painted above; click interactions recolor it on demand.
 
-    for (const l of cfg.labels ?? []) addLabel(l, 'lblchip');
-    for (const p of cfg.pins ?? []) addLabel(p, 'pin');
     const renderStageLabel = (el, l, cls) => {
       if (cls === 'pin') {
         el.innerHTML = '<b>' + l.k + '</b><span>' + languageCopy(l.t, l.te ?? PIN_EN[l.t] ?? l.t) + (l.ok ? ' ✓' : '') + '</span>';
@@ -290,6 +288,8 @@ export function mountStage(host, cfg) {
       }
       labels.push({ el, at: l.at, item: l, kind: cls });
     }
+    for (const l of cfg.labels ?? []) addLabel(l, 'lblchip');
+    for (const p of cfg.pins ?? []) addLabel(p, 'pin');
     window.addEventListener('neuro-language', () => labels.forEach(item => renderStageLabel(item.el, item.item, item.kind)));
     function anchorWorld(at) {
       if (Array.isArray(at)) return toWorld(new THREE.Vector3(...at));
