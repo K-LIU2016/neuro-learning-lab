@@ -9,6 +9,7 @@ const LOBES = ['frontal', 'parietal', 'temporal', 'occipital', 'insula', 'cingul
 const LOBES_EN = ['Frontal lobe', 'Parietal lobe', 'Temporal lobe', 'Occipital lobe', 'Insula', 'Cingulate cortex'];
 const LOBE_COLORS = { frontal: '#E98A7C', parietal: '#E0BA68', temporal: '#66B5A5', occipital: '#889DDC', insula: '#C88BB6', cingulate: '#A9A2C9' };
 const NET_HEX = ['#781286', '#4682B4', '#00760E', '#C43AFA', '#DCF8A4', '#E69422', '#CD3E4E'];
+const NET_RGB = NET_HEX.map(hex => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; });
 const LOBE_LABELS = {
   frontal: ['G_and_S_frontomargin', 'G_and_S_transv_frontopol', 'G_front_inf-Opercular', 'G_front_inf-Orbital', 'G_front_inf-Triangul', 'G_front_middle', 'G_front_sup', 'G_orbital', 'G_precentral', 'G_rectus', 'Lat_Fis-ant-Horizont', 'Lat_Fis-ant-Vertical', 'S_front_inf', 'S_front_middle', 'S_front_sup', 'S_orbital_lateral', 'S_orbital_med-olfact', 'S_orbital-H_Shaped', 'S_precentral-inf-part', 'S_precentral-sup-part', 'S_suborbital'],
   parietal: ['G_pariet_inf-Angular', 'G_pariet_inf-Supramar', 'G_parietal_sup', 'G_postcentral', 'G_precuneus', 'S_interm_prim-Jensen', 'S_intrapariet_and_P_trans', 'S_postcentral', 'S_subparietal', 'S_cingul-Marginalis', 'S_parieto_occipital'],
@@ -18,6 +19,7 @@ const LOBE_LABELS = {
   cingulate: ['G_and_S_cingul-Ant', 'G_and_S_cingul-Mid-Ant', 'G_and_S_cingul-Mid-Post', 'G_cingul-Post-dorsal', 'G_cingul-Post-ventral', 'S_pericallosal', 'G_subcallosal'],
 };
 const PIN_EN = { 额叶: 'Frontal lobe', 杏仁核: 'Amygdala', 海马体: 'Hippocampus', 小脑: 'Cerebellum' };
+const DEEP_EN = { thalamus: 'Thalamus', hypothalamus: 'Hypothalamus', amygdala: 'Amygdala', hippocampus: 'Hippocampus', cerebellum: 'Cerebellum', brainstem: 'Brainstem', spinalCord: 'Spinal cord', callosum: 'Corpus callosum' };
 const CENTER = new THREE.Vector3(0, -18, 12); // FreeSurfer RAS
 const VIEWS = {
   lateral: [-1, 0.1, 0.16], oblique: [-0.9, 0.3, 0.32], superior: [0, -0.14, 1],
@@ -195,11 +197,12 @@ export function mountStage(host, cfg) {
       if (lobe === 255) return;
       recolorCortex(lobe);
       const region = hit.object.userData.names[hit.object.userData.dest[vertex]] ?? '皮层表面';
-      showSelection(`${LOBES[lobe]} · 已点亮`, `${region} · 点击位置`, hit.point, normal);
+      showSelection(languageCopy(`${LOBES[lobe]} · 已点亮`, `${LOBES_EN[lobe]} · highlighted`), languageCopy(`${region} · 点击位置`, `${region} · click point`), hit.point, normal);
     } else {
       recolorCortex(-1);
-      const labels = { hippocampus: '海马体', amygdala: '杏仁核', thalamus: '丘脑', cerebellum: '小脑', brainstem: '脑干', spinalCord: '脊髓', callosum: '胼胝体', hypothalamus: '下丘脑' };
-      showSelection(`${labels[hit.object.userData.key] ?? hit.object.userData.key} · 已选中`, '深部结构 · 点击位置', hit.point, normal);
+      const key = hit.object.userData.key;
+      const zhLabels = { hippocampus: '海马体', amygdala: '杏仁核', thalamus: '丘脑', cerebellum: '小脑', brainstem: '脑干', spinalCord: '脊髓', callosum: '胼胝体', hypothalamus: '下丘脑' };
+      showSelection(languageCopy(`${zhLabels[key] ?? key} · 已选中`, `${DEEP_EN[key] ?? key} · selected`), languageCopy('深部结构 · 点击位置', 'Deep structure · click point'), hit.point, normal);
     }
   });
 
@@ -222,8 +225,55 @@ export function mountStage(host, cfg) {
       controls.update();
     };
     const reset = () => setView(cfg.view ?? 'oblique');
-    host.__stage = { setView, reset, controls, camera };
-    host.dispatchEvent(new CustomEvent('stage-ready', { detail: host.__stage }));
+    const deepBaseColor = key => cfg.deepColors?.[key] ?? '#CFC7B6';
+    const setHighlight = (key, color = TINT) => {
+      if (typeof key === 'string' && LOBES.includes(key)) recolorCortex(LOBES.indexOf(key));
+      else recolorCortex(-1);
+      const hl = new THREE.Color(color);
+      for (const mesh of selectableMeshes) {
+        if (mesh.userData.kind !== 'deep') continue;
+        const on = key === mesh.userData.key;
+        mesh.material.color.set(on ? hl : deepBaseColor(mesh.userData.key));
+        mesh.material.emissive?.set(on ? hl : '#000000');
+      }
+    };
+    const setNetworkHighlight = netIndex => {
+      selectedLobe = -1;
+      for (const mesh of selectableMeshes) {
+        if (mesh.userData.kind !== 'cortex' || !mesh.userData.yeo) continue;
+        const col = mesh.geometry.attributes.color;
+        const base = mesh.userData.baseColors ?? new Float32Array(col.array);
+        mesh.userData.baseColors = base;
+        for (let i = 0; i < mesh.userData.mask.length; i++) {
+          let r, g, b;
+          if (netIndex < 0) { r = base[i * 3]; g = base[i * 3 + 1]; b = base[i * 3 + 2]; }
+          else if (mesh.userData.yeo[i] - 1 === netIndex) { [r, g, b] = NET_RGB[netIndex]; }
+          else { r = base[i * 3] * .34 + IVORY.r * .66; g = base[i * 3 + 1] * .34 + IVORY.g * .66; b = base[i * 3 + 2] * .34 + IVORY.b * .66; }
+          const shade = 1 - 0.44 * (mesh.userData.sulc[i] / 255);
+          col.setXYZ(i, Math.min(1, r * shade), Math.min(1, g * shade), Math.min(1, b * shade));
+        }
+        col.needsUpdate = true;
+      }
+    };
+    const setGhostOpacity = value => {
+      cortexMat.transparent = value < 1;
+      cortexMat.opacity = value;
+      cortexMat.needsUpdate = true;
+    };
+    const setDeepVisible = (keys, visible) => {
+      const set = new Set([].concat(keys));
+      for (const mesh of selectableMeshes) if (mesh.userData.kind === 'deep' && set.has(mesh.userData.key)) mesh.visible = visible;
+    };
+    const setPins = pins => {
+      for (let i = labels.length - 1; i >= 0; i--) {
+        if (labels[i].kind !== 'pin') continue;
+        labels[i].el.remove();
+        anchors.delete(labels[i].at);
+        labels.splice(i, 1);
+      }
+      for (const p of pins ?? []) addLabel(p, 'pin');
+    };
+    host.__stage = { setView, reset, controls, camera, setHighlight, setNetworkHighlight, setGhostOpacity, setDeepVisible, setPins };
 
     const hlLobe = cfg.highlight && LOBES.includes(cfg.highlight) ? LOBES.indexOf(cfg.highlight) : -1;
     const cortexMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0 });
@@ -246,7 +296,7 @@ export function mountStage(host, cfg) {
         col.setXYZ(i, base.r * shade, base.g * shade, base.b * shade);
       }
       const mesh = new THREE.Mesh(geo, cortexMat);
-      mesh.userData = { kind: 'cortex', side, faces: h.faces, mask: lobeMasks[side], sulc: h.sulc, dest: h.dest, names: atlas.destrieux };
+      mesh.userData = { kind: 'cortex', side, faces: h.faces, mask: lobeMasks[side], sulc: h.sulc, dest: h.dest, yeo: h.yeo, names: atlas.destrieux };
       selectableMeshes.push(mesh);
       if (cfg.ghost) mesh.renderOrder = 2;
       root.add(mesh);
@@ -274,7 +324,7 @@ export function mountStage(host, cfg) {
       if (cls === 'pin') {
         el.innerHTML = '<b>' + l.k + '</b><span>' + languageCopy(l.t, l.te ?? PIN_EN[l.t] ?? l.t) + (l.ok ? ' ✓' : '') + '</span>';
       } else {
-        el.innerHTML = (l.b ? '<b>' + languageCopy(l.b, l.be ?? l.b) + '</b>' : '') + (l.s ? '<span>' + l.s + '</span>' : '');
+        el.innerHTML = (l.b ? '<b>' + languageCopy(l.b, l.be ?? l.b) + '</b>' : '') + (l.s ? '<span>' + languageCopy(l.s, l.se ?? l.s) + '</span>' : '');
       }
     };
     function addLabel(l, cls) {
@@ -350,6 +400,7 @@ export function mountStage(host, cfg) {
       renderer.render(scene, camera);
       place();
     });
+    host.dispatchEvent(new CustomEvent('stage-ready', { detail: host.__stage }));
   });
 }
 

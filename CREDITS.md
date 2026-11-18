@@ -25,6 +25,6 @@ The hippocampus, amygdala, thalamus, cerebellum, brainstem, spinal cord and corp
 ## Explanatory sources / 解释来源
 
 - Destrieux et al. (2010), *Automatic parcellation of human cortical gyri and sulci using standard anatomical nomenclature*, NeuroImage.
-- Yeo et al. (2011), *The organization of the human cerebral cortex estimated by intrinsic functional connectivity*, Journal of Neurophysiology. [DOI](https://doi.org/10.1152/jn.00606.2011)
+- Yeo et al. (2011), *The organization of the human cerebral cortex estimated by intrinsic functional connectivity*, Journal of Neurophysiology. [DOI](https://doi.org/10.1152/jn.00338.2011)
 - Scoville & Milner (1957), *Loss of recent memory after bilateral hippocampal lesions*, Journal of Neurology, Neurosurgery & Psychiatry.
 - Raichle (2015), *The brain's default mode network*, Annual Review of Neuroscience. [DOI](https://doi.org/10.1146/annurev-neuro-071013-014030)

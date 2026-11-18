@@ -24,11 +24,11 @@ The design follows three learning moves:
 
 | Mode / 模式 | Experience / 体验 | Key content / 关键内容 |
 | --- | --- | --- |
-| **Learning route / 学习路线** | A guided four-chapter path with progress cues and plain-language cards. / 以四章学习路线和进度提示逐步进入。 | Four lobes, location, function, everyday examples / 四个脑叶、位置、功能与生活例子 |
+| **Learning route / 学习路线** | A guided route with real progress cues and plain-language cards. / 带真实进度提示的学习路线与通俗卡片。 | Seven open concepts: four lobes plus three deep structures / 当前开放 7 个概念：四个脑叶 + 三个深部结构 |
 | **Free exploration / 自由探索** | Rotate, zoom and switch views while observing both hemispheres. / 自由旋转、缩放和切换视角。 | Lobe colours, lateral, oblique and superior views / 脑叶着色、侧视、斜视与俯视 |
-| **Deep structures / 深部结构** | Make the cortex translucent and inspect schematic internal structures. / 将皮层调成半透明，观察内部结构。 | Hippocampus, amygdala, thalamus, cerebellum, brainstem and spinal cord / 海马体、杏仁核、丘脑、小脑、脑干与脊髓 |
-| **Chapter quiz / 章节小测** | Click a pin or an answer and keep the correct structure highlighted. / 点击图钉或选项，答对的结构会保持高亮。 | Three-question memory and emotion quiz flow / 记忆与情绪三题小测流程 |
-| **Professional mode / 专业模式** | Switch from approachable explanations to atlas-based network views. / 从易懂解释切换到基于图谱的网络视图。 | Yeo 2011 seven networks, bilingual terms and references / Yeo 2011 七网络、双语术语与文献来源 |
+| **Deep structures / 深部结构** | Make the cortex translucent and inspect schematic internal structures. / 将皮层调成半透明，观察内部结构。 | Hippocampus, amygdala and thalamus cards with cortex-opacity, label and structure toggles / 海马体、杏仁核、丘脑卡片，配透明度、标签与结构显示开关 |
+| **Chapter quiz / 章节小测** | Click a pin or an option once per question; the correct structure lights up green. / 每题单次作答，答对的结构以绿色高亮。 | Three-question closed loop with feedback, score, best score and retake / 三题闭环：即时解析、成绩、最佳成绩与重做 |
+| **Professional mode / 专业模式** | Switch from approachable explanations to atlas-based network views. / 从易懂解释切换到基于图谱的网络视图。 | Yeo 2011 seven networks with synced cortex highlight, bilingual terms and references / Yeo 2011 七网络联动皮层高亮、双语术语与文献来源 |
 
 The main merged page uses five hash routes: `#learn`, `#explore`, `#deep`, `#quiz` and `#pro`. The older single-view pages (`01-path.html` through `04-pro.html`) are included as part of the merged project archive.
 
@@ -96,9 +96,9 @@ Use a current Chrome, Edge or Firefox browser with WebGL enabled. The root `inde
 
 ## Honest status / 如实说明
 
-- **Implemented / 已实现：** the merged single-page experience, five hash routes, interactive 3D atlas view, lobe colouring, deep-structure transparency, pin-based quiz interaction, Yeo-7 network switching, bilingual labels and source panels.
-- **Demo scope / 演示范围：** the interface presents a four-chapter, 16-concept learning route, while the most developed interactive examples are the four lobes, hippocampus/deep-structure view, the chapter quiz flow and Yeo-7 network exploration.
-- **Teaching status / 教学状态：** this is a product design and interaction prototype. It has not been evaluated as a validated teaching intervention, and the progress numbers are interface examples rather than learner records.
+- **Implemented / 已实现：** the merged single-page experience, five hash routes, interactive 3D atlas view, lobe colouring, deep-structure transparency, the three-question quiz loop, Yeo-7 network switching, bilingual labels and source panels, local progress persistence (localStorage) and responsive layouts for narrow screens.
+- **Demo scope / 演示范围：** seven concepts are open (four lobes plus hippocampus, amygdala and thalamus) together with a three-question chapter quiz; chapters 2–3 are labelled as planned instead of interactive.
+- **Teaching status / 教学状态：** this is a product design and interaction prototype, not a validated teaching intervention. Progress counts are real but stored only in this browser (localStorage), so they stay on this device until export is added.
 - **Atlas boundary / 图谱边界：** the cortical data are atlas-based; deep structures are schematic teaching geometry. Their positions should not be read as a clinical or research-grade subcortical reconstruction.
 - **Runtime boundary / 运行边界：** the hosted version is static and client-side. There is no account, server database, analytics or online content service in this demo.
 
@@ -106,7 +106,7 @@ Use a current Chrome, Edge or Firefox browser with WebGL enabled. The root `inde
 
 1. Complete the remaining learning-route concepts with the same evidence-backed card structure. / 补齐其余学习路线概念，并保持相同的证据卡片结构。
 2. Add a persistent bilingual content model and a searchable region/network index. / 加入持久化双语内容模型与可搜索的脑区、网络索引。
-3. Expand the quiz bank and record progress locally with clear learner controls. / 扩充题库，并在明确的学习者控制下保存本地进度。
+3. Expand the quiz bank and add progress export and clear controls. / 扩充题库，并增加进度导出与清除控制。
 
 ## Where it sits / 项目定位
 
