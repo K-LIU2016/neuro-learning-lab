@@ -1,5 +1,4 @@
- import './brain-view.mjs';
- import { localize, localized } from './i18n.mjs';
+ import { localize, localized } from './i18n.mjs?v=region-lighting';
 
  const $ = (s, root = document) => root.querySelector(s);
  const $$ = (s, root = document) => [...root.querySelectorAll(s)];
@@ -9,8 +8,16 @@
  const LOBE_KEYS = ['frontal', 'parietal', 'temporal', 'occipital'];
  const DEEP_KEYS = ['hippocampus', 'amygdala', 'thalamus'];
  const NET_ORDER = ['visual', 'somato', 'dorsal', 'ventral', 'limbic', 'fronto', 'default'];
- const LOBE_BY_NAME = { '额叶': 'frontal', '顶叶': 'parietal', '颞叶': 'temporal', '枕叶': 'occipital' };
- const DEEP_BY_NAME = { '海马体': 0, '杏仁核': 1, '丘脑': 2 };
+ const ROUTES = ['learn', 'explore', 'deep', 'quiz', 'pro'];
+ const REGION_NAMES = {
+   frontal: ['额叶', 'Frontal lobe'], parietal: ['顶叶', 'Parietal lobe'],
+   temporal: ['颞叶', 'Temporal lobe'], occipital: ['枕叶', 'Occipital lobe'],
+   insula: ['岛叶', 'Insula'], cingulate: ['扣带皮层', 'Cingulate cortex'],
+   thalamus: ['丘脑', 'Thalamus'], hypothalamus: ['下丘脑', 'Hypothalamus'],
+   amygdala: ['杏仁核', 'Amygdala'], hippocampus: ['海马体', 'Hippocampus'],
+   cerebellum: ['小脑', 'Cerebellum'], brainstem: ['脑干', 'Brainstem'],
+   spinalCord: ['脊髓', 'Spinal cord'], callosum: ['胼胝体', 'Corpus callosum'],
+ };
  const PIN_AT = { frontal: [-45, 38, 40], hippocampus: 'deep:hippocampus:L', amygdala: 'deep:amygdala:L', cerebellum: 'deep:cerebellum', thalamus: 'deep:thalamus:L' };
  const STORAGE_KEY = 'neuroatlas.progress.v1';
 
@@ -30,6 +37,31 @@
    host.addEventListener('stage-ready', event => fn(event.detail), { once: true });
  }
 
+ const pendingStages = new WeakSet();
+ async function loadStage(host) {
+   if (host.__stage || pendingStages.has(host)) return;
+   pendingStages.add(host);
+   const status = host.querySelector('.stage-status') ?? document.createElement('p');
+   status.className = 'stage-status';
+   status.setAttribute('role', 'status');
+   delete status.dataset.failed;
+   host.append(status);
+   localize(status, '正在加载 3D 模型…', 'Loading the 3D model…');
+   try {
+     const { mountStage } = await import('./brain-view.mjs?v=region-lighting');
+     const cfg = JSON.parse(host.dataset.stage);
+     cfg.selectable = !!host.closest('.stage-wrap').querySelector('[data-light-region]');
+     await mountStage(host, cfg);
+     status.remove();
+   } catch (error) {
+     console.error('NeuroAtlas:', error);
+     status.dataset.failed = '';
+     localize(status, '3D 模型暂时无法加载。可继续学习，或刷新页面重试。', 'The 3D model could not load. Keep studying or refresh to retry.');
+   } finally {
+     pendingStages.delete(host);
+   }
+ }
+
  const pair = item => localized(item[0], item[1]);
  const nameHtml = item => item[0] + ' <span class="en">' + item[1] + '</span>';
  const nameLine = (el, item) => localize(el, nameHtml(item), item[1], item[0] + ' ' + item[1]);
@@ -37,15 +69,15 @@
  /* ---------- persisted learning progress ---------- */
 
  function sanitizeState(raw) {
-   const clean = { route: 'learn', lobe: 2, deep: 0, network: 6, lobesVisited: [], deepVisited: [], networksVisited: [], quizBest: null };
+   const clean = { route: 'learn', lobe: 2, deep: 0, network: 6, litRegions: [], networksVisited: [], quizBest: null };
    if (!raw || typeof raw !== 'object') return clean;
-   if (['learn', 'explore', 'deep', 'quiz', 'pro'].includes(raw.route)) clean.route = raw.route;
+   if (ROUTES.includes(raw.route)) clean.route = raw.route;
    if (Number.isInteger(raw.lobe) && raw.lobe >= 0 && raw.lobe < LOBE_KEYS.length) clean.lobe = raw.lobe;
    if (Number.isInteger(raw.deep) && raw.deep >= 0 && raw.deep < DEEP_KEYS.length) clean.deep = raw.deep;
    if (Number.isInteger(raw.network) && raw.network >= 0 && raw.network < NET_ORDER.length) clean.network = raw.network;
    const keepList = (value, valid) => (Array.isArray(value) ? [...new Set(value.filter(key => valid.includes(key)))] : []);
-   clean.lobesVisited = keepList(raw.lobesVisited, LOBE_KEYS);
-   clean.deepVisited = keepList(raw.deepVisited, DEEP_KEYS);
+   // Older records tracked visits. Completion requires an explicit action.
+   clean.litRegions = keepList(raw.litRegions, Object.keys(REGION_NAMES));
    clean.networksVisited = keepList(raw.networksVisited, NET_ORDER);
    if (raw.quizBest === null || (Number.isInteger(raw.quizBest) && raw.quizBest >= 0 && raw.quizBest <= 3)) clean.quizBest = raw.quizBest;
    return clean;
@@ -60,36 +92,22 @@
  }
 
  const state = loadState();
+ const selectedRegions = { learn: LOBE_KEYS[state.lobe], deep: DEEP_KEYS[state.deep], explore: null };
 
  function saveState() {
    try {
-     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-       route: state.route,
-       lobe: state.lobe,
-       deep: state.deep,
-       network: state.network,
-       lobesVisited: [...state.lobesVisited],
-       deepVisited: [...state.deepVisited],
-       networksVisited: [...state.networksVisited],
-       quizBest: state.quizBest,
-     }));
+     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
    } catch { /* private mode */ }
  }
 
- function markVisit(route) {
-   const map = {
-     learn: [state.lobesVisited, LOBE_KEYS[state.lobe]],
-     deep: [state.deepVisited, DEEP_KEYS[state.deep]],
-     pro: [state.networksVisited, NET_ORDER[state.network]],
-   };
-   const entry = map[route];
-   if (!entry || entry[1] == null || entry[0].includes(entry[1])) return;
-   entry[0].push(entry[1]);
-   saveState();
+ function recordNetworkVisit() {
+   const key = NET_ORDER[state.network];
+   if (!state.networksVisited.includes(key)) state.networksVisited.push(key);
  }
 
  function currentRoute() {
-   return location.hash.slice(1) || state.route || 'learn';
+   const route = location.hash.slice(1);
+   return ROUTES.includes(route) ? route : state.route;
  }
 
  /* ---------- route switching with real progress counting ---------- */
@@ -101,15 +119,19 @@
  let quizFinalScore = 0;
 
  function updateChapterLines() {
-   const done = state.lobesVisited.length;
+   const done = LOBE_KEYS.filter(key => state.litRegions.includes(key)).length;
    const zh = done + ' / 4 · ' + (done === 4 ? '已完成' : '进行中');
    const en = done + ' / 4 · ' + (done === 4 ? 'Complete' : 'in progress');
    localize($('#deepChapterProgress'), zh, en);
    localize($('#quizChapterProgress'), zh, en);
+   $$('[data-lobe-chapter]').forEach(chapter => {
+     chapter.classList.toggle('done2', done === LOBE_KEYS.length);
+     $('.num', chapter).textContent = done === LOBE_KEYS.length ? '✓' : '1';
+   });
  }
 
  function updateProgress(route) {
-   const concepts = state.lobesVisited.length + state.deepVisited.length;
+   const concepts = [...LOBE_KEYS, ...DEEP_KEYS].filter(key => state.litRegions.includes(key)).length;
    const quizScore = quizLog.filter(entry => entry === true).length;
    let text;
    if (route === 'pro') {
@@ -120,24 +142,24 @@
        : localized('章节小测 · 第 ' + (quizIndex + 1) + ' / 3 题 · 已答对 ' + quizScore, 'Chapter quiz · question ' + (quizIndex + 1) + ' of 3 · ' + quizScore + ' correct');
    } else {
      const best = state.quizBest == null ? '' : localized(' · 小测最佳 ' + state.quizBest + ' / 3', ' · quiz best ' + state.quizBest + ' / 3');
-     text = localized('学习进度 ' + concepts + ' / 7 个核心概念', 'Learning progress ' + concepts + ' / 7 core concepts') + best;
+     text = localized('已点亮 ' + concepts + ' / 7 个核心概念', 'Lit ' + concepts + ' / 7 core concepts') + best;
    }
    $('#progressText').textContent = text;
    updateChapterLines();
  }
 
  function showRoute(route) {
+   if (!ROUTES.includes(route)) return;
    const panel = $('[data-route-panel="' + route + '"]');
    if (!panel) return;
    if (location.hash !== '#' + route) history.replaceState(null, '', '#' + route);
    $$('[data-route-panel]').forEach(el => el.classList.toggle('active', el === panel));
    $$('[data-route-link]').forEach(el => el.classList.toggle('on', el.dataset.routeLink === route));
    state.route = route;
+   if (route === 'pro') recordNetworkVisit();
    saveState();
-   markVisit(route);
    updateProgress(route);
-   window.dispatchEvent(new CustomEvent('neuro-route', { detail: route }));
-   requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+   loadStage(panel.querySelector('[data-stage]'));
  }
 
  document.addEventListener('click', event => {
@@ -147,7 +169,7 @@
      showRoute(routeLink.dataset.routeLink);
    }
  });
- window.addEventListener('hashchange', () => showRoute(location.hash.slice(1) || state.route || 'learn'));
+ window.addEventListener('hashchange', () => showRoute(currentRoute()));
 
  /* ---------- chapter 1 · four lobes ---------- */
 
@@ -202,9 +224,10 @@
    },
  ];
 
- function renderLobe(index, silent) {
+ function renderLobe(index, silent, select = true) {
    state.lobe = index;
    const d = lobeData[index];
+   if (select) selectedRegions.learn = d.key;
    nameLine($('#learnName'), d.name);
    localize($('#learnOne'), d.one[0], d.one[1]);
    localize($('#learnWhere'), d.where[0], d.where[1]);
@@ -215,21 +238,18 @@
    localize($('#learnNeighborLine'), d.near[0], d.near[1]);
    localize($('#learnStageTitle'), d.name[0] + '在哪里？', 'Where is the ' + d.name[1].toLowerCase() + '?');
    localize($('#learnTag'), '脑叶 · 本章第 ' + (index + 1) + ' / 4 个', 'Lobe · ' + (index + 1) + ' / 4 in this chapter');
+   $('#learnTag').style.setProperty('--c', 'var(--' + d.key + ')');
    localize($('#learnHudCurrent'), d.hud[0], d.hud[1]);
    $('#lobeCount').textContent = (index + 1) + ' / 4';
    const status = index === 3
-     ? pair(['四个脑叶都认完了，可以进入章节小测。', 'All four lobes are familiar now. You can start the chapter quiz.'])
+     ? pair(['接下来可以进入深部结构，看看它们与脑叶的位置关系。', 'Next, explore how deep structures sit in relation to the lobes.'])
      : localized('已定位到' + d.name[0] + '，下一步把“在哪里”与“做什么”连起来。', 'Located ' + d.name[1] + '. Next, connect where it is with what it does.');
    localize($('#learnStatus'), status, status);
    const next = lobeData[Math.min(index + 1, 3)];
    localize($('#learnNextBtn'),
-     index === 3 ? '我学会了 · 开始章节小测' : '我学会了 · 下一个：' + next.name[0],
-     index === 3 ? 'I understand it · Start the chapter quiz' : 'I understand it · Next: ' + next.name[1]);
-   $$('#learnRoute [data-learn-step]').forEach((el, i) => {
-     el.classList.toggle('done', state.lobesVisited.includes(LOBE_KEYS[i]));
-     el.classList.toggle('now', i === index);
-   });
-   withStage('#learn-stage', s => s.setHighlight(d.key));
+     index === 3 ? '继续学习深部结构' : '下一个：' + next.name[0],
+     index === 3 ? 'Continue to deep structures' : 'Next: ' + next.name[1]);
+   updateRegionControl('learn');
    saveState();
    updateProgress(currentRoute());
    if (!silent) notify(localized('现在学习：' + d.name[0], 'Now studying: ' + d.name[1]));
@@ -246,7 +266,7 @@
      does: ['把白天的经历在睡眠中巩固成长期记忆，还负责空间导航，伦敦出租车司机的海马体就格外发达。', 'Consolidates daytime experiences into long-term memories during sleep and supports spatial navigation; London taxi drivers have especially developed hippocampi.'],
      example: ['记住今天新同学的姓名、回忆昨晚晚饭吃了什么、在熟悉的城市里找到回家的路。', 'Remembering a new classmate’s name, recalling last night’s dinner and finding your way home in a familiar city.'],
      pro: [
-       [['所属网络', 'Network'], ['边缘网络 Limbic', 'Limbic network']],
+       [['功能联系', 'Functional connections'], ['参与内侧颞叶记忆回路', 'Part of medial temporal memory circuits']],
        [['邻近结构', 'Nearby structures'], ['内嗅皮层 · 杏仁核 · 丘脑', 'Entorhinal cortex · amygdala · thalamus']],
        [['经典案例', 'Classic case'], ['病人 H.M. 切除后无法形成新记忆', 'Patient H.M. could not form new memories after resection']],
      ],
@@ -263,7 +283,7 @@
      does: ['快速评估眼前的情景是否危险，触发恐惧和紧张等情绪反应。', 'Rapidly evaluates whether a scene is dangerous and triggers fear and tension.'],
      example: ['夜里听到奇怪的声音立刻警觉、心跳加快，这是杏仁核在报警。', 'Feeling instantly alert, heart racing, at a strange sound at night — that is the amygdala signalling.'],
      pro: [
-       [['所属网络', 'Network'], ['边缘网络 Limbic', 'Limbic network']],
+       [['功能联系', 'Functional connections'], ['联系多处皮层与皮层下区域', 'Connected to multiple cortical and subcortical regions']],
        [['邻近结构', 'Nearby structures'], ['海马体 · 内嗅皮层', 'Hippocampus · entorhinal cortex']],
        [['经典案例', 'Classic case'], ['病人 S.M. 双侧受损后难以识别恐惧', 'Patient S.M. could not recognise fear after bilateral damage']],
      ],
@@ -280,7 +300,7 @@
      does: ['把视觉、听觉、触觉等信号分拣后转发给对应的皮层区域，也参与觉醒与注意。', 'Sorts visual, auditory and touch signals and forwards them to the right cortical areas; also involved in arousal and attention.'],
      example: ['看球赛时，画面的亮度和观众的呐喊几乎同时到达，丘脑让它们各就各位。', 'At a match, the bright picture and the roar of the crowd arrive almost together; the thalamus routes each to its place.'],
      pro: [
-       [['所属网络', 'Network'], ['跨网络 · 与多数皮层区域相连', 'Across networks · connected to most cortical areas']],
+       [['功能联系', 'Functional connections'], ['一组与不同皮层区域相连的核团', 'A group of nuclei connected to different cortical areas']],
        [['邻近结构', 'Nearby structures'], ['基底核 · 下丘脑（示意）', 'Basal ganglia · hypothalamus (schematic)']],
        [['经典案例', 'Classic case'], ['丘脑损伤可改变意识与注意', 'Thalamic damage can alter consciousness and attention']],
      ],
@@ -291,9 +311,10 @@
    },
  ];
 
- function renderDeep(index, silent) {
+ function renderDeep(index, silent, select = true) {
    state.deep = index;
    const d = deepData[index];
+   if (select) selectedRegions.deep = d.key;
    nameLine($('#deepName'), d.name);
    localize($('#deepOne'), d.one[0], d.one[1]);
    localize($('#deepWhere'), d.where[0], d.where[1]);
@@ -301,6 +322,7 @@
    localize($('#deepExample'), d.example[0], d.example[1]);
    localize($('#deepStageTitle'), d.stageTitle[0], d.stageTitle[1]);
    localize($('#deepTag'), '深部结构 · 本章第 ' + (index + 1) + ' / 3 个', 'Deep structure · ' + (index + 1) + ' / 3 in this chapter');
+   $('#deepTag').style.setProperty('--c', 'var(--' + d.key + ')');
    localize($('#deepHudCurrent'), d.hud[0], d.hud[1]);
    localize($('#deepSource'), d.source[0], d.source[1]);
    localize($('#deepStatus'), d.status[0], d.status[1]);
@@ -308,13 +330,9 @@
    $('#deepCount').textContent = (index + 1) + ' / 3';
    const next = deepData[Math.min(index + 1, 2)];
    localize($('#deepNextBtn'),
-     index === 2 ? '我学会了 · 开始章节小测' : '我学会了 · 下一个：' + next.name[0],
-     index === 2 ? 'I understand it · Start the chapter quiz' : 'I understand it · Next: ' + next.name[1]);
-   $$('#deepRoute [data-deep-step]').forEach((el, i) => {
-     el.classList.toggle('done', state.deepVisited.includes(DEEP_KEYS[i]));
-     el.classList.toggle('now', i === index);
-   });
-   withStage('#deep-stage', s => s.setHighlight(d.key));
+     index === 2 ? '开始章节小测' : '下一个：' + next.name[0],
+     index === 2 ? 'Start the chapter quiz' : 'Next: ' + next.name[1]);
+   updateRegionControl('deep');
    saveState();
    updateProgress(currentRoute());
    if (!silent) notify(localized('现在学习：' + d.name[0], 'Now studying: ' + d.name[1]));
@@ -393,7 +411,7 @@
      ok ? d.ok + ' · ' + okOption.te + ' ✓' : answer + ' · look again at the structure’s location');
    withStage('#quiz-stage', s => {
      s.setHighlight(ok ? d.reveal : 'none', OK_GREEN);
-     s.setPins(pinsFor(d, true));
+     s.setPins(pinsFor(d, ok));
    });
  }
 
@@ -495,7 +513,8 @@
      return;
    }
    if (quizIndex < 2) renderQuestion(quizIndex + 1);
-   else finishQuiz();
+   else if (quizPicked.every(Boolean)) finishQuiz();
+   else renderQuestion(quizPicked.indexOf(null));
  });
  $('#quizRestartBtn').addEventListener('click', restartQuiz);
 
@@ -558,6 +577,7 @@
    const key = NET_ORDER[index];
    const d = networkData[key];
    $$('[data-network]').forEach(el => el.classList.toggle('on', el.dataset.network === key));
+   $('#proRoute .tag').style.setProperty('--c', $('[data-network].on i').style.backgroundColor);
    nameLine($('#proName'), d.name);
    localize($('#proOne'), d.one[0], d.one[1]);
    localize($('#proDoes'), d.does[0], d.does[1]);
@@ -565,6 +585,7 @@
    localize($('#proFunction'), d.func[0], d.func[1]);
    localize($('#proStageTitle'), d.name[0] + '在脑内的分布', 'Distribution of the ' + d.name[1]);
    withStage('#pro-stage', s => s.setNetworkHighlight(index));
+   if (currentRoute() === 'pro') recordNetworkVisit();
    saveState();
    updateProgress(currentRoute());
    if (!silent) notify(localized('已切换到' + d.name[0], 'Switched to the ' + d.name[1]));
@@ -610,27 +631,69 @@
  }
  bindStageControls();
 
- $$('.stage-host').forEach(stage => stage.addEventListener('brain-select', event => {
-   const { title, subtitle, lobe } = event.detail;
-   const name = title.split(' · ')[0];
-   if (stage.id === 'learn-stage' && lobe >= 0) {
-     const index = LOBE_KEYS.indexOf(LOBE_BY_NAME[name]);
-     if (index >= 0) renderLobe(index, true);
-   } else if (stage.id === 'deep-stage') {
-     const index = DEEP_BY_NAME[name];
-     if (index !== undefined) renderDeep(index, true);
-   } else if (stage.id === 'pro-stage') {
-     withStage('#pro-stage', s => s.setNetworkHighlight(state.network));
+ function updateRegionControl(route) {
+   const panel = $('[data-route-panel="' + route + '"]');
+   const key = selectedRegions[route];
+   const display = REGION_NAMES[key];
+   const isLit = state.litRegions.includes(key);
+   const button = $('[data-light-region]', panel);
+   const name = $('[data-region-name]', panel);
+   if (display) {
+     localize(name, display[0], display[1]);
+     name.style.setProperty('--region-color', 'var(--' + key + ')');
+     button.setAttribute('aria-label', localized('点亮' + display[0], 'Light up the ' + display[1]));
+   } else {
+     localize(name, '先在模型上选择脑区', 'Select a region on the model');
+     name.style.removeProperty('--region-color');
+     button.removeAttribute('aria-label');
    }
-   notify(title + ' · ' + subtitle);
- }));
+   button.disabled = !display;
+   button.setAttribute('aria-pressed', String(isLit));
+   button.title = isLit ? localized('再次点击可取消点亮', 'Click again to undo') : '';
+   localize(button, isLit ? '✓ 已点亮' : '✦ 点亮', isLit ? '✓ Lit' : '✦ Light up');
+   const steps = route === 'learn' ? LOBE_KEYS : route === 'deep' ? DEEP_KEYS : [];
+   $$('[data-' + route + '-step]', panel).forEach((el, i) => {
+     el.classList.toggle('done', state.litRegions.includes(steps[i]));
+     el.classList.toggle('now', key === steps[i]);
+   });
+ }
+
+ for (const route of Object.keys(selectedRegions)) {
+   const panel = $('[data-route-panel="' + route + '"]');
+   const stage = $('[data-stage]', panel);
+   stage.addEventListener('stage-ready', event => event.detail.setLitRegions(state.litRegions));
+   stage.addEventListener('brain-select', event => {
+     const { key } = event.detail;
+     if (!Object.hasOwn(REGION_NAMES, key)) return;
+     const lobe = LOBE_KEYS.indexOf(key);
+     const deep = DEEP_KEYS.indexOf(key);
+     if (route === 'learn' && lobe >= 0) renderLobe(lobe, true);
+     else if (route === 'deep' && deep >= 0) renderDeep(deep, true);
+     else {
+       selectedRegions[route] = key;
+       updateRegionControl(route);
+     }
+   });
+   $('[data-light-region]', panel).addEventListener('click', () => {
+     const key = selectedRegions[route];
+     if (!key) return;
+     if (state.litRegions.includes(key)) state.litRegions = state.litRegions.filter(item => item !== key);
+     else state.litRegions.push(key);
+     saveState();
+     for (const target of Object.keys(selectedRegions)) {
+       updateRegionControl(target);
+       $('#' + target + '-stage').__stage?.setLitRegions(state.litRegions);
+     }
+     updateProgress(currentRoute());
+   });
+ }
 
  /* ---------- wiring ---------- */
 
  $$('[data-learn-step]').forEach(el => el.addEventListener('click', () => renderLobe(Number(el.dataset.learnStep))));
  $('[data-next-lobe]').addEventListener('click', () => {
    if (state.lobe < 3) renderLobe(state.lobe + 1);
-   else showRoute('quiz');
+   else showRoute('deep');
  });
  $$('[data-deep-step]').forEach(el => el.addEventListener('click', () => renderDeep(Number(el.dataset.deepStep))));
  $('[data-next-deep]').addEventListener('click', () => {
@@ -642,8 +705,9 @@
  }));
 
  window.addEventListener('neuro-language', () => {
-   renderLobe(state.lobe, true);
-   renderDeep(state.deep, true);
+   renderLobe(state.lobe, true, false);
+   renderDeep(state.deep, true, false);
+   updateRegionControl('explore');
    renderNetwork(state.network, true);
    if (quizFinished) finishQuiz(true);
    else renderQuestion(quizIndex, true);
@@ -654,7 +718,8 @@
 
  renderLobe(state.lobe, true);
  renderDeep(state.deep, true);
+ updateRegionControl('explore');
  renderNetwork(state.network, true);
  renderQuestion(0, true);
  withStage('#deep-stage', s => s.setDeepVisible(['callosum'], false));
- showRoute(location.hash.slice(1) || state.route || 'learn');
+ showRoute(currentRoute());

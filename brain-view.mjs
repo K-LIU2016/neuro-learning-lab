@@ -6,10 +6,8 @@ import { OrbitControls } from './OrbitControls.js';
 const IVORY = new THREE.Color('#E9E2D3');
 const TINT = '#F2B441';
 const LOBES = ['frontal', 'parietal', 'temporal', 'occipital', 'insula', 'cingulate'];
-const LOBES_EN = ['Frontal lobe', 'Parietal lobe', 'Temporal lobe', 'Occipital lobe', 'Insula', 'Cingulate cortex'];
-const LOBE_COLORS = { frontal: '#E98A7C', parietal: '#E0BA68', temporal: '#66B5A5', occipital: '#889DDC', insula: '#C88BB6', cingulate: '#A9A2C9' };
 const NET_HEX = ['#781286', '#4682B4', '#00760E', '#C43AFA', '#DCF8A4', '#E69422', '#CD3E4E'];
-const NET_RGB = NET_HEX.map(hex => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; });
+const NET_COLORS = NET_HEX.map(hex => new THREE.Color(hex));
 const LOBE_LABELS = {
   frontal: ['G_and_S_frontomargin', 'G_and_S_transv_frontopol', 'G_front_inf-Opercular', 'G_front_inf-Orbital', 'G_front_inf-Triangul', 'G_front_middle', 'G_front_sup', 'G_orbital', 'G_precentral', 'G_rectus', 'Lat_Fis-ant-Horizont', 'Lat_Fis-ant-Vertical', 'S_front_inf', 'S_front_middle', 'S_front_sup', 'S_orbital_lateral', 'S_orbital_med-olfact', 'S_orbital-H_Shaped', 'S_precentral-inf-part', 'S_precentral-sup-part', 'S_suborbital'],
   parietal: ['G_pariet_inf-Angular', 'G_pariet_inf-Supramar', 'G_parietal_sup', 'G_postcentral', 'G_precuneus', 'S_interm_prim-Jensen', 'S_intrapariet_and_P_trans', 'S_postcentral', 'S_subparietal', 'S_cingul-Marginalis', 'S_parieto_occipital'],
@@ -19,10 +17,9 @@ const LOBE_LABELS = {
   cingulate: ['G_and_S_cingul-Ant', 'G_and_S_cingul-Mid-Ant', 'G_and_S_cingul-Mid-Post', 'G_cingul-Post-dorsal', 'G_cingul-Post-ventral', 'S_pericallosal', 'G_subcallosal'],
 };
 const PIN_EN = { 额叶: 'Frontal lobe', 杏仁核: 'Amygdala', 海马体: 'Hippocampus', 小脑: 'Cerebellum' };
-const DEEP_EN = { thalamus: 'Thalamus', hypothalamus: 'Hypothalamus', amygdala: 'Amygdala', hippocampus: 'Hippocampus', cerebellum: 'Cerebellum', brainstem: 'Brainstem', spinalCord: 'Spinal cord', callosum: 'Corpus callosum' };
 const CENTER = new THREE.Vector3(0, -18, 12); // FreeSurfer RAS
 const VIEWS = {
-  lateral: [-1, 0.1, 0.16], oblique: [-0.9, 0.3, 0.32], superior: [0, -0.14, 1],
+  lateral: [-1, 0.1, 0.16], right: [1, 0.1, 0.16], oblique: [-0.9, 0.3, 0.32], superior: [0, -0.14, 1],
   anterior: [0, 1, 0.1], posterior: [0, -1, 0.08], deep: [-0.74, -0.3, -0.59],
 };
 const toWorld = p => new THREE.Vector3(p.x, p.z, -p.y);
@@ -31,8 +28,15 @@ let atlasPromise;
 function loadAtlas() {
   if (!atlasPromise) {
     atlasPromise = (async () => {
-      const meta = await (await fetch('./atlas.json')).json();
-      const buf = await (await fetch('./atlas.bin')).arrayBuffer();
+      const get = async file => {
+        const response = await fetch(new URL(file, import.meta.url));
+        if (!response.ok) throw new Error(file + ': HTTP ' + response.status);
+        return response;
+      };
+      const [meta, buf] = await Promise.all([
+        get('./atlas.json').then(response => response.json()),
+        get('./atlas.bin').then(response => response.arrayBuffer()),
+      ]);
       const hemi = s => {
         const [pial, , faces, sulc, dest, yeo] = meta.hemis[s].offsets;
         return {
@@ -41,7 +45,10 @@ function loadAtlas() {
         };
       };
       return { nVert: meta.nVert, destrieux: meta.destrieux, hemis: { L: hemi('L'), R: hemi('R') } };
-    })();
+    })().catch(error => {
+      atlasPromise = undefined;
+      throw error;
+    });
   }
   return atlasPromise;
 }
@@ -107,21 +114,20 @@ function languageCopy(zh, en) {
   return lang === 'en' ? en : lang === 'bi' ? zh + ' / ' + en : zh;
 }
 
-export function mountStage(host, cfg) {
+export async function mountStage(host, cfg) {
+  const atlas = await loadAtlas();
   const labels = [];
   host.style.position = 'relative';
   const canvas = document.createElement('canvas');
   const layer = document.createElement('div');
   layer.className = 'stage-labels';
-  host.append(canvas, layer);
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+  host.append(canvas, layer);
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 10, 3000);
   const root = new THREE.Group();
   const selectableMeshes = [];
-  let selectedLobe = -1;
-  let selectedPoint = null;
   const raycaster = new THREE.Raycaster();
   const pointer = new THREE.Vector2();
   root.rotation.x = -Math.PI / 2;
@@ -132,290 +138,252 @@ export function mountStage(host, cfg) {
   const fill = new THREE.DirectionalLight(0xdfe8ff, 0.55); fill.position.set(0.9, -0.3, 0.5);
   camera.add(key, fill);
 
-  const marker = new THREE.Group();
-  const markerCore = new THREE.Mesh(new THREE.SphereGeometry(4.2, 24, 16), new THREE.MeshStandardMaterial({ color: TINT, emissive: TINT, emissiveIntensity: 1.7, roughness: .28 }));
-  const markerHalo = new THREE.Mesh(new THREE.SphereGeometry(9, 24, 16), new THREE.MeshBasicMaterial({ color: TINT, transparent: true, opacity: .25, depthWrite: false, blending: THREE.AdditiveBlending }));
-  const markerRing = new THREE.Mesh(new THREE.TorusGeometry(10, 1.25, 10, 36), new THREE.MeshBasicMaterial({ color: '#FFE29A', transparent: true, opacity: .95, depthWrite: false }));
-  const markerLight = new THREE.PointLight(TINT, 5, 110, 2);
-  marker.add(markerCore, markerHalo, markerRing, markerLight);
-  marker.visible = false;
-  scene.add(marker);
-  const callout = document.createElement('div');
-  callout.className = 'selection-callout';
-  callout.hidden = true;
-  host.appendChild(callout);
+  const styles = getComputedStyle(host);
+  const regionColor = key => new THREE.Color(styles.getPropertyValue('--' + key).trim() || '#CFC7B6');
+  const lobeColors = LOBES.map(regionColor);
+  const white = new THREE.Color('#ffffff');
+  const nextColor = new THREE.Color();
+  let litRegions = new Set();
+  let highlight = cfg.highlight;
+  const highlightColor = new THREE.Color(cfg.highlightColor ?? TINT);
+  let networkIndex = -1;
 
-  function recolorCortex(nextLobe) {
-    selectedLobe = nextLobe;
+  function paintRegions() {
     for (const mesh of selectableMeshes) {
-      if (mesh.userData.kind !== 'cortex') continue;
+      const data = mesh.userData;
+      if (data.kind === 'deep') {
+        const base = data.baseColor;
+        const lit = litRegions.has(data.key);
+        mesh.material.color.copy(data.key === highlight ? highlightColor : base);
+        if (lit) mesh.material.color.lerp(white, .3);
+        mesh.material.emissive.copy(data.key === highlight ? highlightColor : base);
+        mesh.material.emissiveIntensity = data.key === highlight ? .45 : lit ? .18 : 0;
+        continue;
+      }
       const col = mesh.geometry.attributes.color;
-      const base = mesh.userData.baseColors ?? new Float32Array(col.array);
-      mesh.userData.baseColors = base;
-      for (let i = 0; i < mesh.userData.mask.length; i++) {
-        const lobe = mesh.userData.mask[i];
-        let r = base[i * 3], g = base[i * 3 + 1], b = base[i * 3 + 2];
-        if (nextLobe >= 0) {
-          if (lobe === nextLobe) {
-            r = Math.min(1, (r * .42 + 1 * .58) * 1.22);
-            g = Math.min(1, (g * .42 + .816 * .58) * 1.22);
-            b = Math.min(1, (b * .42 + .35 * .58) * 1.22);
-          } else {
-            r = (r * .42 + IVORY.r * .58) * .72;
-            g = (g * .42 + IVORY.g * .58) * .72;
-            b = (b * .42 + IVORY.b * .58) * .72;
-          }
+      for (let i = 0; i < data.mask.length; i++) {
+        const lobe = data.mask[i];
+        const key = LOBES[lobe];
+        if (cfg.paint === 'yeo') {
+          const network = data.yeo[i] - 1;
+          nextColor.copy(NET_COLORS[network] ?? IVORY);
+          if (networkIndex >= 0 && network !== networkIndex) nextColor.lerp(IVORY, .38).multiplyScalar(.72);
+        } else {
+          nextColor.copy(cfg.paint === 'plain' ? IVORY : lobeColors[lobe] ?? IVORY);
+          if (key && key === highlight) nextColor.lerp(highlightColor, .5);
+          if (litRegions.has(key)) nextColor.lerp(white, .28);
         }
-        const shade = 1 - 0.44 * (mesh.userData.sulc[i] / 255);
-        col.setXYZ(i, Math.min(1, r * shade), Math.min(1, g * shade), Math.min(1, b * shade));
+        const shade = 1 - .44 * (data.sulc[i] / 255);
+        col.setXYZ(i, nextColor.r * shade, nextColor.g * shade, nextColor.b * shade);
       }
       col.needsUpdate = true;
     }
   }
 
-  function showSelection(title, subtitle, point, normal) {
-    selectedPoint = point.clone();
-    marker.position.copy(point);
-    markerRing.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), normal ?? new THREE.Vector3(0, 1, 0));
-    marker.visible = true;
-    callout.innerHTML = `<b>${title}</b><span>${subtitle}</span>`;
-    callout.hidden = false;
-    host.dispatchEvent(new CustomEvent('brain-select', { detail: { title, subtitle, lobe: selectedLobe } }));
-  }
-
-  canvas.addEventListener('click', event => {
-    const rect = canvas.getBoundingClientRect();
-    pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObjects(selectableMeshes, false)[0];
-    if (!hit) return;
-    const normal = hit.face?.normal?.clone().applyMatrix3(new THREE.Matrix3().getNormalMatrix(hit.object.matrixWorld)).normalize();
-    if (hit.object.userData.kind === 'cortex') {
-      const vertex = hit.object.userData.faces[hit.faceIndex * 3];
-      const lobe = hit.object.userData.mask[vertex];
-      if (lobe === 255) return;
-      recolorCortex(lobe);
-      const region = hit.object.userData.names[hit.object.userData.dest[vertex]] ?? '皮层表面';
-      showSelection(languageCopy(`${LOBES[lobe]} · 已点亮`, `${LOBES_EN[lobe]} · highlighted`), languageCopy(`${region} · 点击位置`, `${region} · click point`), hit.point, normal);
-    } else {
-      recolorCortex(-1);
-      const key = hit.object.userData.key;
-      const zhLabels = { hippocampus: '海马体', amygdala: '杏仁核', thalamus: '丘脑', cerebellum: '小脑', brainstem: '脑干', spinalCord: '脊髓', callosum: '胼胝体', hypothalamus: '下丘脑' };
-      showSelection(languageCopy(`${zhLabels[key] ?? key} · 已选中`, `${DEEP_EN[key] ?? key} · selected`), languageCopy('深部结构 · 点击位置', 'Deep structure · click point'), hit.point, normal);
-    }
-  });
-
-  loadAtlas().then(atlas => {
-    const lobeMasks = buildLobeMasks(atlas);
-    const worldCenter = toWorld(CENTER);
-    const dirOf = v => toWorld(new THREE.Vector3(...(Array.isArray(v) ? v : VIEWS[v ?? 'oblique']))).normalize();
-    camera.position.copy(worldCenter).addScaledVector(dirOf(cfg.view), cfg.distance ?? 405);
-    camera.lookAt(worldCenter);
-    const controls = new OrbitControls(camera, canvas);
-    controls.enableDamping = true; controls.dampingFactor = 0.12;
-    controls.minDistance = 200; controls.maxDistance = 800;
-    controls.target.copy(worldCenter);
-
-    const setView = name => {
-      const distance = camera.position.distanceTo(controls.target);
-      camera.position.copy(worldCenter).addScaledVector(dirOf(name), distance);
-      camera.lookAt(worldCenter);
-      controls.target.copy(worldCenter);
-      controls.update();
-    };
-    const reset = () => setView(cfg.view ?? 'oblique');
-    const deepBaseColor = key => cfg.deepColors?.[key] ?? '#CFC7B6';
-    const setHighlight = (key, color = TINT) => {
-      if (typeof key === 'string' && LOBES.includes(key)) recolorCortex(LOBES.indexOf(key));
-      else recolorCortex(-1);
-      const hl = new THREE.Color(color);
-      for (const mesh of selectableMeshes) {
-        if (mesh.userData.kind !== 'deep') continue;
-        const on = key === mesh.userData.key;
-        mesh.material.color.set(on ? hl : deepBaseColor(mesh.userData.key));
-        mesh.material.emissive?.set(on ? hl : '#000000');
-      }
-    };
-    const setNetworkHighlight = netIndex => {
-      selectedLobe = -1;
-      for (const mesh of selectableMeshes) {
-        if (mesh.userData.kind !== 'cortex' || !mesh.userData.yeo) continue;
-        const col = mesh.geometry.attributes.color;
-        const base = mesh.userData.baseColors ?? new Float32Array(col.array);
-        mesh.userData.baseColors = base;
-        for (let i = 0; i < mesh.userData.mask.length; i++) {
-          let r, g, b;
-          if (netIndex < 0) { r = base[i * 3]; g = base[i * 3 + 1]; b = base[i * 3 + 2]; }
-          else if (mesh.userData.yeo[i] - 1 === netIndex) { [r, g, b] = NET_RGB[netIndex]; }
-          else { r = base[i * 3] * .34 + IVORY.r * .66; g = base[i * 3 + 1] * .34 + IVORY.g * .66; b = base[i * 3 + 2] * .34 + IVORY.b * .66; }
-          const shade = 1 - 0.44 * (mesh.userData.sulc[i] / 255);
-          col.setXYZ(i, Math.min(1, r * shade), Math.min(1, g * shade), Math.min(1, b * shade));
-        }
-        col.needsUpdate = true;
-      }
-    };
-    const setGhostOpacity = value => {
-      cortexMat.transparent = value < 1;
-      cortexMat.opacity = value;
-      cortexMat.needsUpdate = true;
-    };
-    const setDeepVisible = (keys, visible) => {
-      const set = new Set([].concat(keys));
-      for (const mesh of selectableMeshes) if (mesh.userData.kind === 'deep' && set.has(mesh.userData.key)) mesh.visible = visible;
-    };
-    const setPins = pins => {
-      for (let i = labels.length - 1; i >= 0; i--) {
-        if (labels[i].kind !== 'pin') continue;
-        labels[i].el.remove();
-        anchors.delete(labels[i].at);
-        labels.splice(i, 1);
-      }
-      for (const p of pins ?? []) addLabel(p, 'pin');
-    };
-    host.__stage = { setView, reset, controls, camera, setHighlight, setNetworkHighlight, setGhostOpacity, setDeepVisible, setPins };
-
-    const hlLobe = cfg.highlight && LOBES.includes(cfg.highlight) ? LOBES.indexOf(cfg.highlight) : -1;
-    const cortexMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0 });
-    if (cfg.ghost) { cortexMat.transparent = true; cortexMat.opacity = 0.15; cortexMat.depthWrite = false; }
-    for (const side of ['L', 'R']) {
-      const h = atlas.hemis[side];
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(h.pial), 3));
-      geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(atlas.nVert * 3), 3));
-      geo.setIndex(new THREE.BufferAttribute(h.faces, 1));
-      geo.computeVertexNormals();
-      const col = geo.attributes.color;
-      for (let i = 0; i < atlas.nVert; i++) {
-        const lobe = lobeMasks[side][i];
-        let base = cfg.paint === 'yeo' ? new THREE.Color(NET_HEX[h.yeo[i] - 1] ?? '#E9E2D3')
-          : cfg.paint === 'plain' ? IVORY
-          : lobe === 255 ? IVORY : new THREE.Color(LOBE_COLORS[LOBES[lobe]]);
-        if (hlLobe >= 0) base = lobe === hlLobe ? base.clone().lerp(new THREE.Color(cfg.highlightColor ?? TINT), 0.5) : base.clone().lerp(IVORY, cfg.fade ?? 0.38);
-        const shade = 1 - 0.44 * (h.sulc[i] / 255);
-        col.setXYZ(i, base.r * shade, base.g * shade, base.b * shade);
-      }
-      const mesh = new THREE.Mesh(geo, cortexMat);
-      mesh.userData = { kind: 'cortex', side, faces: h.faces, mask: lobeMasks[side], sulc: h.sulc, dest: h.dest, yeo: h.yeo, names: atlas.destrieux };
-      selectableMeshes.push(mesh);
-      if (cfg.ghost) mesh.renderOrder = 2;
-      root.add(mesh);
-    }
-
-    const wantDeep = cfg.deep === 'all' || (!!cfg.highlight && !LOBES.includes(cfg.highlight));
-    if (wantDeep) {
-      for (const d of DEFS) {
-        for (const s of d.mid ? [1] : [-1, 1]) {
-          for (const g of [].concat(d.make(s))) {
-            const isHl = cfg.highlight === d.key;
-            const color = isHl ? (cfg.highlightColor ?? TINT) : (cfg.deepColors?.[d.key] ?? '#CFC7B6');
-            const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ color, roughness: 0.62, metalness: 0 }));
-            mesh.userData = { kind: 'deep', key: d.key };
-            selectableMeshes.push(mesh);
-            root.add(mesh);
-          }
-        }
-      }
-    }
-
-    // The initial appearance is already painted above; click interactions recolor it on demand.
-
-    const renderStageLabel = (el, l, cls) => {
-      if (cls === 'pin') {
-        el.innerHTML = '<b>' + l.k + '</b><span>' + languageCopy(l.t, l.te ?? PIN_EN[l.t] ?? l.t) + (l.ok ? ' ✓' : '') + '</span>';
-      } else {
-        el.innerHTML = (l.b ? '<b>' + languageCopy(l.b, l.be ?? l.b) + '</b>' : '') + (l.s ? '<span>' + languageCopy(l.s, l.se ?? l.s) + '</span>' : '');
-      }
-    };
-    function addLabel(l, cls) {
-      const el = document.createElement('div');
-      el.className = cls + (l.on ? ' on' : '') + (l.ok ? ' ok' : '');
-      renderStageLabel(el, l, cls);
-      layer.append(el);
-      if (cls === 'pin') {
-        el.dataset.answer = l.k;
-        el.addEventListener('click', () => host.dispatchEvent(new CustomEvent('brain-pin', { detail: l })));
-      }
-      labels.push({ el, at: l.at, item: l, kind: cls });
-    }
-    for (const l of cfg.labels ?? []) addLabel(l, 'lblchip');
-    for (const p of cfg.pins ?? []) addLabel(p, 'pin');
-    window.addEventListener('neuro-language', () => labels.forEach(item => renderStageLabel(item.el, item.item, item.kind)));
-    function anchorWorld(at) {
-      if (Array.isArray(at)) return toWorld(new THREE.Vector3(...at));
-      if (at.startsWith('lobe:')) {
-        const lobe = LOBES.indexOf(at.slice(5));
-        const camDir = camera.position.clone().sub(worldCenter).normalize();
-        let best = null, bestDot = -Infinity;
-        for (const side of ['L', 'R']) {
-          const h = atlas.hemis[side];
-          for (let i = 0; i < atlas.nVert; i++) {
-            if (lobeMasks[side][i] !== lobe) continue;
-            const w = toWorld(new THREE.Vector3(h.pial[i * 3], h.pial[i * 3 + 1], h.pial[i * 3 + 2]));
-            const dot = w.clone().sub(worldCenter).normalize().dot(camDir);
-            if (dot > bestDot) { bestDot = dot; best = w; }
-          }
-        }
-        return best ?? worldCenter;
-      }
-      if (at.startsWith('deep:')) {
-        const [, k, side] = at.split(':');
-        const s = side === 'L' ? -1 : 1;
-        const c = DEEP_CENTER[k];
-        return toWorld(new THREE.Vector3(c[0] * s, c[1], c[2]));
-      }
-      return worldCenter;
-    }
-    const anchors = new Map();
-    function place() {
-      const rect = host.getBoundingClientRect();
-      for (const l of labels) {
-        if (!anchors.has(l.at)) anchors.set(l.at, anchorWorld(l.at));
-        const w = anchors.get(l.at).clone().project(camera);
-        l.el.style.left = ((w.x + 1) / 2 * rect.width) + 'px';
-        l.el.style.top = ((1 - w.y) / 2 * rect.height) + 'px';
-      }
-      if (selectedPoint && marker.visible) {
-        const w = selectedPoint.clone().project(camera);
-        callout.style.left = `${((w.x + 1) / 2 * rect.width)}px`;
-        callout.style.top = `${((1 - w.y) / 2 * rect.height)}px`;
-      }
-    }
-    function resize() {
-      const w = host.clientWidth, h = host.clientHeight;
-      if (!w || !h) return;
-      renderer.setSize(w, h, false);
-      camera.aspect = w / h;
-      camera.updateProjectionMatrix();
-    }
-    new ResizeObserver(resize).observe(host);
-    resize();
-    renderer.setAnimationLoop(() => {
-      controls.update();
-      if (marker.visible) {
-        const pulse = 1 + Math.sin(performance.now() * .006) * .12;
-        markerHalo.scale.setScalar(pulse);
-        markerRing.rotation.z += .014;
-      }
-      renderer.render(scene, camera);
-      place();
+  if (cfg.selectable) {
+    let press;
+    let dragged = false;
+    canvas.addEventListener('pointerdown', event => {
+      press = [event.clientX, event.clientY];
+      dragged = !event.isPrimary;
     });
-    host.dispatchEvent(new CustomEvent('stage-ready', { detail: host.__stage }));
+    canvas.addEventListener('pointermove', event => {
+      if (event.buttons && press && Math.hypot(event.clientX - press[0], event.clientY - press[1]) > 5) dragged = true;
+    });
+    canvas.addEventListener('click', event => {
+      if (dragged) return;
+      const rect = canvas.getBoundingClientRect();
+      pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(pointer, camera);
+      const hits = raycaster.intersectObjects(selectableMeshes.filter(mesh => mesh.visible), false);
+      const hit = (cfg.ghost && hits.find(hit => hit.object.userData.kind === 'deep')) || hits[0];
+      if (!hit) return;
+      const data = hit.object.userData;
+      const key = data.kind === 'deep' ? data.key : LOBES[data.mask[hit.face.a]];
+      if (key) host.dispatchEvent(new CustomEvent('brain-select', { detail: { key } }));
+    });
+  }
+
+  const lobeMasks = buildLobeMasks(atlas);
+  const worldCenter = toWorld(CENTER);
+  const dirOf = v => toWorld(new THREE.Vector3(...(Array.isArray(v) ? v : VIEWS[v ?? 'oblique']))).normalize();
+  camera.position.copy(worldCenter).addScaledVector(dirOf(cfg.view), cfg.distance ?? 405);
+  camera.lookAt(worldCenter);
+  const controls = new OrbitControls(camera, canvas);
+  controls.enableDamping = true; controls.dampingFactor = 0.12;
+  controls.minDistance = 200; controls.maxDistance = 800;
+  controls.target.copy(worldCenter);
+
+  const setView = name => {
+    const distance = camera.position.distanceTo(controls.target);
+    camera.position.copy(worldCenter).addScaledVector(dirOf(name), distance);
+    camera.lookAt(worldCenter);
+    controls.target.copy(worldCenter);
+    controls.update();
+  };
+  const reset = () => setView(cfg.view ?? 'oblique');
+  const setHighlight = (key, color = TINT) => {
+    highlight = key;
+    highlightColor.set(color);
+    paintRegions();
+  };
+  const setNetworkHighlight = netIndex => {
+    networkIndex = netIndex;
+    paintRegions();
+    for (const label of labels) label.el.classList.toggle('on', label.item.networkIndex === netIndex);
+  };
+  const setLitRegions = keys => {
+    litRegions = new Set(keys);
+    paintRegions();
+  };
+  const setGhostOpacity = value => {
+    cortexMat.transparent = value < 1;
+    cortexMat.opacity = value;
+    cortexMat.needsUpdate = true;
+  };
+  const setDeepVisible = (keys, visible) => {
+    const set = new Set([].concat(keys));
+    for (const mesh of selectableMeshes) if (mesh.userData.kind === 'deep' && set.has(mesh.userData.key)) mesh.visible = visible;
+    for (const label of labels) {
+      if (typeof label.at === 'string' && label.at.startsWith('deep:') && set.has(label.at.split(':')[1])) {
+        label.el.style.display = visible ? '' : 'none';
+      }
+    }
+  };
+  const setPins = pins => {
+    for (let i = labels.length - 1; i >= 0; i--) {
+      if (labels[i].kind !== 'pin') continue;
+      labels[i].el.remove();
+      anchors.delete(labels[i].at);
+      labels.splice(i, 1);
+    }
+    for (const p of pins ?? []) addLabel(p, 'pin');
+  };
+  const cortexMat = new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 0.58, metalness: 0 });
+  if (cfg.ghost) { cortexMat.transparent = true; cortexMat.opacity = 0.15; cortexMat.depthWrite = false; }
+  for (const side of ['L', 'R']) {
+    const h = atlas.hemis[side];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(h.pial), 3));
+    geo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(atlas.nVert * 3), 3));
+    geo.setIndex(new THREE.BufferAttribute(h.faces, 1));
+    geo.computeVertexNormals();
+    const mesh = new THREE.Mesh(geo, cortexMat);
+    mesh.userData = { kind: 'cortex', mask: lobeMasks[side], sulc: h.sulc, yeo: h.yeo };
+    selectableMeshes.push(mesh);
+    if (cfg.ghost) mesh.renderOrder = 2;
+    root.add(mesh);
+  }
+
+  const wantDeep = cfg.deep === 'all' || (!!cfg.highlight && !LOBES.includes(cfg.highlight));
+  if (wantDeep) {
+    for (const d of DEFS) {
+      for (const s of d.mid ? [1] : [-1, 1]) {
+        for (const g of [].concat(d.make(s))) {
+          const baseColor = cfg.deepColors?.[d.key] ? new THREE.Color(cfg.deepColors[d.key]) : regionColor(d.key);
+          const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({ roughness: 0.62, metalness: 0 }));
+          mesh.userData = { kind: 'deep', key: d.key, baseColor };
+          selectableMeshes.push(mesh);
+          root.add(mesh);
+        }
+      }
+    }
+  }
+
+  paintRegions();
+
+  const renderStageLabel = (el, l, cls) => {
+    if (cls === 'pin') {
+      el.innerHTML = '<b>' + l.k + '</b><span>' + languageCopy(l.t, l.te ?? PIN_EN[l.t] ?? l.t) + (l.ok ? ' ✓' : '') + '</span>';
+    } else {
+      el.innerHTML = (l.b ? '<b>' + languageCopy(l.b, l.be ?? l.b) + '</b>' : '') + (l.s ? '<span>' + languageCopy(l.s, l.se ?? l.s) + '</span>' : '');
+    }
+  };
+  function addLabel(l, cls) {
+    const el = document.createElement('div');
+    el.className = cls + (l.on ? ' on' : '') + (l.ok ? ' ok' : '');
+    renderStageLabel(el, l, cls);
+    layer.append(el);
+    if (cls === 'pin') {
+      el.dataset.answer = l.k;
+      el.addEventListener('click', () => host.dispatchEvent(new CustomEvent('brain-pin', { detail: l })));
+    }
+    labels.push({ el, at: l.at, item: l, kind: cls });
+  }
+  for (const l of cfg.labels ?? []) addLabel(l, 'lblchip');
+  for (const p of cfg.pins ?? []) addLabel(p, 'pin');
+  window.addEventListener('neuro-language', () => labels.forEach(item => renderStageLabel(item.el, item.item, item.kind)));
+  function anchorWorld(at, side) {
+    if (Array.isArray(at)) return toWorld(new THREE.Vector3(...at));
+    if (at.startsWith('lobe:')) {
+      const lobe = LOBES.indexOf(at.slice(5));
+      const h = atlas.hemis[side];
+      const centroid = new THREE.Vector3();
+      let count = 0;
+      for (let i = 0; i < atlas.nVert; i++) {
+        if (lobeMasks[side][i] !== lobe) continue;
+        centroid.x += h.pial[i * 3];
+        centroid.y += h.pial[i * 3 + 1];
+        centroid.z += h.pial[i * 3 + 2];
+        count++;
+      }
+      return count ? toWorld(centroid.divideScalar(count)) : worldCenter;
+    }
+    if (at.startsWith('deep:')) {
+      const [, k, hemisphere] = at.split(':');
+      const s = hemisphere === 'L' ? -1 : 1;
+      const c = DEEP_CENTER[k];
+      return toWorld(new THREE.Vector3(c[0] * s, c[1], c[2]));
+    }
+    return worldCenter;
+  }
+  const anchors = new Map();
+  let anchorSide;
+  function place() {
+    const rect = host.getBoundingClientRect();
+    const side = camera.position.x > worldCenter.x ? 'R' : 'L';
+    if (side !== anchorSide) {
+      anchors.clear();
+      anchorSide = side;
+    }
+    for (const l of labels) {
+      if (!anchors.has(l.at)) anchors.set(l.at, anchorWorld(l.at, anchorSide));
+      const w = anchors.get(l.at).clone().project(camera);
+      l.el.style.left = ((w.x + 1) / 2 * rect.width) + 'px';
+      l.el.style.top = ((1 - w.y) / 2 * rect.height) + 'px';
+    }
+  }
+  function resize() {
+    const w = host.clientWidth, h = host.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  new ResizeObserver(resize).observe(host);
+  resize();
+  const route = host.closest('[data-route-panel]');
+  renderer.setAnimationLoop(() => {
+    if (route && !route.classList.contains('active')) return;
+    controls.update();
+    renderer.render(scene, camera);
+    place();
   });
+  host.__stage = { setView, reset, setHighlight, setNetworkHighlight, setLitRegions, setGhostOpacity, setDeepVisible, setPins };
+  host.dispatchEvent(new CustomEvent('stage-ready', { detail: host.__stage }));
 }
 
-const mountedStages = new WeakSet();
-function mountVisibleRoute(routeRoot) {
-  for (const el of routeRoot?.querySelectorAll('[data-stage]') ?? []) {
-    if (mountedStages.has(el)) continue;
-    mountedStages.add(el);
-    mountStage(el, JSON.parse(el.dataset.stage));
+// The archived single-view pages load this module directly.
+if (!document.querySelector('[data-route-panel]')) {
+  for (const host of document.querySelectorAll('[data-stage]')) {
+    mountStage(host, JSON.parse(host.dataset.stage)).catch(error => {
+      console.error('NeuroAtlas:', error);
+      const notice = document.createElement('p');
+      notice.className = 'stage-status';
+      notice.textContent = '3D 模型暂时无法加载。';
+      host.append(notice);
+    });
   }
 }
-const initialRoute = location.hash.slice(1);
-mountVisibleRoute(document.querySelector(`[data-route-panel="${initialRoute}"]`) ?? document.querySelector('[data-route-panel].active') ?? document);
-window.addEventListener('neuro-route', event => {
-  const routeRoot = document.querySelector(`[data-route-panel="${event.detail}"]`);
-  mountVisibleRoute(routeRoot);
-});
 

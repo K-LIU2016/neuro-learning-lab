@@ -1,5 +1,6 @@
 const STORAGE_KEY = 'neuroatlas.language';
 const TEXT = {
+  '脑区搜索、功能索引和教学回路 · 规划中': 'Region search, functional index and teaching circuits · planned',
   '脑科学实验室': 'Neuroscience Learning Lab', '学习模式': 'Learning mode', '学习路线': 'Learning path', '自由探索': 'Explore freely', '专业模式': 'Pro mode',
   '学习进度': 'Learning progress', '语言': 'Language', '中': '中文', '双语': 'Bilingual', '🔍 搜索脑区、网络或别名': '🔍 Search brain regions, networks or aliases',
   '学习路线 · 第一次学脑科学 · 当前开放 7 个核心概念': 'Learning path · First steps in neuroscience · 7 core concepts open now',

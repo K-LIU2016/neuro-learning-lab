@@ -24,8 +24,8 @@ The design follows three learning moves:
 
 | Mode / 模式 | Experience / 体验 | Key content / 关键内容 |
 | --- | --- | --- |
-| **Learning route / 学习路线** | A guided route with real progress cues and plain-language cards. / 带真实进度提示的学习路线与通俗卡片。 | Seven open concepts: four lobes plus three deep structures / 当前开放 7 个概念：四个脑叶 + 三个深部结构 |
-| **Free exploration / 自由探索** | Rotate, zoom and switch views while observing both hemispheres. / 自由旋转、缩放和切换视角。 | Lobe colours, lateral, oblique and superior views / 脑叶着色、侧视、斜视与俯视 |
+| **Learning route / 学习路线** | Select a region to read its card, then use **Light up** below the model when you finish learning. / 选择脑区阅读卡片，学完后在模型下方点击 **点亮**。 | Seven core concepts: four lobes plus three deep structures / 7 个核心概念：四个脑叶加三个深部结构 |
+| **Free exploration / 自由探索** | Rotate, zoom and select regions while observing both hemispheres. / 自由旋转、缩放和选择双侧脑区。 | High contrast lobe colours and shared lit status / 高对比脑叶配色与跨模块同步的点亮状态 |
 | **Deep structures / 深部结构** | Make the cortex translucent and inspect schematic internal structures. / 将皮层调成半透明，观察内部结构。 | Hippocampus, amygdala and thalamus cards with cortex-opacity, label and structure toggles / 海马体、杏仁核、丘脑卡片，配透明度、标签与结构显示开关 |
 | **Chapter quiz / 章节小测** | Click a pin or an option once per question; the correct structure lights up green. / 每题单次作答，答对的结构以绿色高亮。 | Three-question closed loop with feedback, score, best score and retake / 三题闭环：即时解析、成绩、最佳成绩与重做 |
 | **Professional mode / 专业模式** | Switch from approachable explanations to atlas-based network views. / 从易懂解释切换到基于图谱的网络视图。 | Yeo 2011 seven networks with synced cortex highlight, bilingual terms and references / Yeo 2011 七网络联动皮层高亮、双语术语与文献来源 |
@@ -42,9 +42,9 @@ The screenshots below were captured from the merged page running locally. The fu
 
 ### 1. Learning route / 学习路线
 
-![Learning route showing the temporal lobe in the real-atlas 3D view](docs/screenshots/01-learning-route.png)
+![Learning route showing the frontal lobe lit up and recorded as complete](docs/screenshots/01-learning-route.png)
 
-The learner can switch between lobes, rotate the model, read a location/function/everyday example card and enter the chapter quiz from the same screen. / 学习者可以切换脑叶、旋转模型，在同一屏阅读位置、功能与生活例子，并进入章节小测。
+The learner can select a lobe, read about its location and function, then light it up to mark the concept as complete. / 学习者可以选择脑叶、阅读位置和功能卡片，然后点亮脑叶记录学习进度。
 
 ### 2. Professional network view / 专业网络视图
 
@@ -83,7 +83,7 @@ Or use any static server:
 python -m http.server 8231
 ```
 
-Use a current Chrome, Edge or Firefox browser with WebGL enabled. The root `index.html` is a copy of the merged entry page and opens the `#learn` route; the original entry remains available as [`neuro-learning-lab.html`](neuro-learning-lab.html).
+Use a current browser with WebGL enabled. The old [`neuro-learning-lab.html`](neuro-learning-lab.html) link redirects to the merged homepage and preserves the route hash. / 推荐使用支持 WebGL 的新版浏览器。旧链接会转到融合版主页并保留目标模块。
 
 ## Technology / 技术
 
@@ -98,7 +98,7 @@ Use a current Chrome, Edge or Firefox browser with WebGL enabled. The root `inde
 
 - **Implemented / 已实现：** the merged single-page experience, five hash routes, interactive 3D atlas view, lobe colouring, deep-structure transparency, the three-question quiz loop, Yeo-7 network switching, bilingual labels and source panels, local progress persistence (localStorage) and responsive layouts for narrow screens.
 - **Demo scope / 演示范围：** seven concepts are open (four lobes plus hippocampus, amygdala and thalamus) together with a three-question chapter quiz; chapters 2–3 are labelled as planned instead of interactive.
-- **Teaching status / 教学状态：** this is a product design and interaction prototype, not a validated teaching intervention. Progress counts are real but stored only in this browser (localStorage), so they stay on this device until export is added.
+- **Learning progress / 学习进度：** the seven-concept counter tracks explicit **Light up** actions. Clicking again undoes the mark. Lit regions and quiz best scores are saved in the current browser. Earlier records of simply opening a region do not count as completion. / 进度按主动点亮统计，再点一次可撤销。点亮状态和小测最佳成绩保存在当前浏览器。旧版浏览记录不计为学完。
 - **Atlas boundary / 图谱边界：** the cortical data are atlas-based; deep structures are schematic teaching geometry. Their positions should not be read as a clinical or research-grade subcortical reconstruction.
 - **Runtime boundary / 运行边界：** the hosted version is static and client-side. There is no account, server database, analytics or online content service in this demo.
 

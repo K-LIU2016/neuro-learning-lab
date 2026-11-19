@@ -2,7 +2,9 @@
   --paper: #f5f2ec; --paper-2: #f1eee7; --card: #ffffff; --ink: #1f2a37; --soft: #5c6772; --muted: #8b949d;
   --line: #dedbd3; --navy: #122238; --navy-2: #1c314b; --stage: #0d1726;
   --amber: #f2b441; --amber-ink: #3a2a05; --teal: #4f958b; --ok: #1f7a4d; --bad: #b3402e;
-  --frontal: #E98A7C; --parietal: #E0BA68; --temporal: #66B5A5; --occipital: #889DDC; --insula: #C88BB6; --cingulate: #A9A2C9;
+  --frontal: #D91932; --parietal: #EFA800; --temporal: #008C5C; --occipital: #234FD6; --insula: #A713A7; --cingulate: #008AAE;
+  --hippocampus: #F18716; --amygdala: #D81C67; --thalamus: #315DEA; --hypothalamus: #A718B0;
+  --cerebellum: #11916E; --brainstem: #067A9A; --spinalCord: #0AA5B1; --callosum: #D9DDEA;
   --r-sm: 8px; --r-md: 14px; --r-lg: 22px;
 }
 * { box-sizing: border-box; }
@@ -46,8 +48,8 @@ html[data-lang="en"] .ritem small { display: none !important; }
 .work { display: grid; grid-template-columns: 292px minmax(0, 1fr) 386px; min-height: 0; }
 body:has(.banner) .work { grid-template-rows: auto minmax(0, 1fr); }
 .banner { grid-column: 1 / -1; margin: 12px 18px 0; padding: 9px 16px; border-radius: 12px; background: #fdf6e3; border: 1px solid #ecd9a8; color: #6b5312; font-size: 12.5px; }
-.rail { background: var(--paper-2); border-right: 1px solid var(--line); padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 9px; overflow: hidden; }
-.panel { background: var(--paper); border-left: 1px solid var(--line); padding: 15px; overflow: hidden; }
+.rail { background: var(--paper-2); border-right: 1px solid var(--line); padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 9px; overflow-y: auto; }
+.panel { background: var(--paper); border-left: 1px solid var(--line); padding: 15px; overflow-y: auto; }
 .stage-wrap { display: flex; flex-direction: column; gap: 10px; padding: 15px 18px 13px; min-width: 0; min-height: 0; }
 .stage-head { display: flex; align-items: flex-end; gap: 14px; }
 .stage-head h2 { font-size: 21px; letter-spacing: -.015em; margin-top: 2px; }
@@ -57,10 +59,15 @@ body:has(.banner) .work { grid-template-rows: auto minmax(0, 1fr); }
 .view-btns button.on { background: var(--navy); border-color: var(--navy); color: #fff; }
 #stage { position: relative; flex: 1; min-height: 0; border-radius: var(--r-lg); background: radial-gradient(ellipse at 50% 40%, #17253a 0%, var(--stage) 72%); box-shadow: 0 10px 24px rgba(30, 39, 47, .14); overflow: hidden; }
 #stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.stage-host canvas { cursor: crosshair; }
-.selection-callout { position: absolute; z-index: 6; transform: translate(-50%, -145%); display: flex; flex-direction: column; gap: 1px; min-width: 118px; padding: 7px 10px; border: 1px solid #ffd878; border-radius: 10px; background: rgba(18, 34, 56, .94); color: #fff; box-shadow: 0 0 0 3px rgba(242, 180, 65, .18), 0 7px 20px rgba(0, 0, 0, .28); pointer-events: none; text-align: center; white-space: nowrap; }
-.selection-callout b { color: #ffd46a; font-size: 12px; }
-.selection-callout span { color: rgba(255, 255, 255, .72); font-size: 9.5px; }
+.stage-host canvas { cursor: grab; }
+.stage-host canvas:active { cursor: grabbing; }
+.stage-status { position: absolute; z-index: 7; inset: 0; display: grid; place-content: center; padding: 22px; color: #fff; background: var(--stage); text-align: center; pointer-events: none; }
+.region-control { display: flex; align-items: center; justify-content: space-between; gap: 8px 12px; flex-wrap: wrap; padding: 7px 9px 7px 13px; border: 1px solid var(--line); border-radius: var(--r-md); background: var(--card); }
+[data-region-name] { display: inline-flex; align-items: center; gap: 8px; font-weight: 650; }
+[data-region-name]::before { content: ''; width: 10px; height: 10px; flex: 0 0 10px; border-radius: 3px; background: var(--region-color, #9ba5ae); }
+[data-light-region] { min-height: 36px; padding: 4px 14px; border: 1px solid var(--navy); border-radius: var(--r-sm); background: var(--navy); color: #fff; font-weight: 700; }
+[data-light-region][aria-pressed="true"] { border-color: #edbd4b; background: #ffe29a; color: #3a2905; }
+[data-light-region]:disabled { opacity: .45; cursor: default; }
 .gesture { color: var(--muted); font-size: 10.5px; text-align: center; }
 .hud { position: absolute; z-index: 3; font-size: 10px; color: rgba(238, 242, 239, .75); pointer-events: none; }
 .hud.tl { top: 14px; left: 16px; display: flex; flex-direction: column; gap: 2px; }
